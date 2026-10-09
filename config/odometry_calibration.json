@@ -1,0 +1,11 @@
+{
+  "source": "evaluation/odometry_calibration.py, 28 manoeuvres, 1740 steps, default odometry noise",
+  "scale_v": 0.999002111315936,
+  "scale_omega": 0.9879288258182322,
+  "extra_noise_per_step": {
+    "q_xy_m": 0.0005024681678004927,
+    "k_dist": 0.0,
+    "q_theta_rad": 0.0027099604336706254,
+    "k_turn": 0.004385287718002674
+  }
+}
