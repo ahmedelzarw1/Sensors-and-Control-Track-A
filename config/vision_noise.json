@@ -1,0 +1,29 @@
+{
+  "source": "evaluation/vision_characterisation.py, pass 1 seed 0 (2588 poses), pass 2 seed 1 (2613 poses), obstacles removed",
+  "range_bias_k_per_m": 0.006758173849746843,
+  "range_bias_model": "r_true = r_meas - k r_meas^2 along the camera ray (fitted in pass 1)",
+  "noise_model": "sigma_i(d, a) = sqrt(c0^2 + (c1*d^2)^2) * (1 + c2*|a|), d planar range m, a viewing angle rad",
+  "coeffs": {
+    "x": [
+      0.0005795836008584083,
+      0.0015056503522624903,
+      1.9169665429837426
+    ],
+    "y": [
+      0.0001297015639440988,
+      0.00081795827374744,
+      0.8492158175007827
+    ],
+    "yaw": [
+      0.002252924765064156,
+      0.008808683956628632,
+      1.905825666217806e-15
+    ]
+  },
+  "dynamic_inflation": [
+    1.0,
+    1.0,
+    2.393476396227661
+  ],
+  "dynamic_source": "evaluation/vision_dynamic.py, 15 of 15 docking episodes successful and used, 2572 measurements (38 ambiguity flips excluded)"
+}
