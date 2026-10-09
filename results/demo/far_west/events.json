@@ -1,0 +1,26 @@
+[
+ [
+  20.0,
+  "no marker fix before the localisation timeout, continuing on the start prior"
+ ],
+ [
+  40.5,
+  "end of path without a recent marker fix, searching"
+ ],
+ [
+  104.3,
+  "marker acquired"
+ ],
+ [
+  104.3,
+  "docking reference built"
+ ],
+ [
+  107.4,
+  "no marker fix during docking, searching again"
+ ],
+ [
+  240.1,
+  "timeout"
+ ]
+]
