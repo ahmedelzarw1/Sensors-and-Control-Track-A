@@ -140,9 +140,9 @@ are the next step.
 Tool: Claude (Anthropic), used through the Claude chat interface and Claude Code.
 
 Purpose: Ahmed El Zarw specified the requirements, the design constraints and the order of work, and directed the
-development. Claude Code generated most of the code and documentation in this repository under that direction. This
-includes the platform wrapper, the models and the LQR tracker; the room scene, the camera rendering and the ArUco
-measurement pipeline with its characterisation; the baseline EKF, docking and planning modules; the odometry
+development. Claude Code generated some of the code and documentation in this repository under that direction. This
+includes the platform wrapper, the models and the LQR tracker. Ahmed generated the room scene, the camera rendering and the ArUco
+measurement pipeline with its characterisation, the baseline EKF, docking and planning modules. Claude code generated the odometry
 calibration and filter tuning; the mission logic; and the evaluation, demo and viewer scripts. Claude Code also ran the
 diagnostics that found the platform issues listed above.
 
