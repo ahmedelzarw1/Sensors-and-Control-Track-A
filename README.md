@@ -474,11 +474,21 @@ Every run is seeded, so the same commands give the same results.
 
 ## Contribution statement
 
-| Member | Contribution |
+| Member | Responsible for |
 |---|---|
-| Ahmed El Zarw | State-space model, controllability and observability analysis, LQR tracker, frames and interfaces, platform, obstacle-aware path, evaluation, random rooms, integration |
-| TODO | EKF fusing wheel odometry with camera marker measurements (baseline in `robot_code/localisation/`, to be reviewed and extended) |
-| TODO | ArUco detection, camera calibration, docking trajectory (baseline in `robot_code/vision/` and `robot_code/docking/`, to be reviewed and extended) |
+| Ahmed El Zarw | State-space model and LQR controller (`robot_code/movement_maths/`, `robot_code/controller/`) |
+| Jeremy | EKF fusing wheel odometry with the ArUco camera measurements (`robot_code/localisation/`). Fusing a LiDAR pose estimate as well is planned and not yet implemented. |
+| Janith | ArUco detection and docking logic (`robot_code/vision/`, `robot_code/docking/`) |
+
+As a team we:
+
+- chose the Track A design;
+- decided to use the official ROBOTIS TurtleBot3 Burger model;
+- specified that the motion model, linearisation, discretisation, LQR and EKF follow the formulas from the weekly
+  tutorials;
+- tested the simulation in the live viewer, and found that the viewer's Reset button broke the run (the robot was
+  moved without the estimator being told), which led to the fix;
+- gave the feedback that led to the random rooms, the robot camera photos and the serial-monitor printout.
 
 ## Acknowledgements
 
@@ -492,13 +502,13 @@ Every run is seeded, so the same commands give the same results.
 
 Tool: Claude (Anthropic), used through the Claude chat interface and Claude Code.
 
-Purpose: Ahmed El Zarw specified the requirements, the design constraints and the order of work, and directed the
-development. Claude Code generated most of the code and documentation in this repository under that direction. This
-includes the platform wrapper, the models and the LQR tracker; the room scene, the camera rendering and the ArUco
-measurement pipeline with its calibration; the baseline EKF, docking and planning modules; the odometry calibration and
-filter tuning; the robot's decision logic; the random rooms, photos and serial-monitor printout; the evaluation, demo
-and viewer commands; the project layout; and this README. Claude Code also ran the diagnostics that found the issues
-listed above, including the three faults in the ROBOTIS model.
+Purpose: the team set the requirements, the design decisions and the order of work listed in the contribution
+statement, directed the development and tested the results. Claude Code generated most of the code and documentation in
+this repository under that direction. This includes the platform wrapper, the models and the LQR tracker; the room
+scene, the camera rendering and the ArUco measurement pipeline with its calibration; the EKF, docking and planning
+modules; the odometry calibration and filter tuning; the robot's decision logic; the random rooms, photos and
+serial-monitor printout; the evaluation, demo and viewer commands; the project layout; and this README. Claude Code
+also ran the diagnostics that found the issues listed above, including the three faults in the ROBOTIS model.
 
-Each team member is responsible for reviewing and understanding the material credited to them.
-TODO before submission: each teammate adds their own tool use and purpose here, and the team records who reviewed which file.
+Each team member is responsible for reviewing and understanding the parts credited to them in the contribution
+statement.
