@@ -37,10 +37,10 @@ class EpisodeConfig:
     odom_noise: OdomNoise = field(default_factory=OdomNoise)
     ekf: Optional[EKFParams] = None             # None: calibrated and tuned parameters from config/
     tracker_mode: str = "scheduled"
-    # Operating limit on the commanded turn rate. The datasheet value 2.84 rad/s is not usable on this platform:
-    # with fast turn reversals above about 1.2 rad/s the wheels slipped and the heading error reached 20 degrees in
-    # under a second (docs/platform_notes.md). 1.2 rad/s is our choice from that evidence; Stage 3 sweeps it.
-    omega_max: float = 1.2
+    # Operating limit on the commanded turn rate. None: the fastest turn the wheels allow, 2 r w_max / L = 2.75 rad/s
+    # with the ROBOTIS wheel limit of 6.67 rad/s (the datasheet gives 2.84). The earlier Hakoniwa model slipped badly
+    # above about 1.2 rad/s and was limited to that; the patched ROBOTIS model does not (docs/platform_notes.md).
+    omega_max: Optional[float] = None
     slew: bool = True
     planner: str = "known_map"
     wheel_scale: tuple = (1.0, 1.0)             # true wheel radius / radius the software believes (left, right)
@@ -108,7 +108,9 @@ def run_episode(cfg: EpisodeConfig, frame_hook: Optional[Callable] = None,
     noise = MarkerNoiseModel.from_json(static_only=cfg.vision_static_noise_only, use_tuning=cfg.use_tuning)
     noise.inflation = noise.inflation * np.asarray(cfg.vision_r_scale, dtype=float)
     sensor = MarkerSensor(sim.sensor_extrinsics()["camera"], noise)
-    tracker = LQRTracker(Ts, mode=cfg.tracker_mode, limits=Limits(omega_max=cfg.omega_max))
+    p = sim.params
+    w_lim = cfg.omega_max if cfg.omega_max is not None else 2.0 * p.wheel_radius * p.max_wheel_speed / p.wheel_separation
+    tracker = LQRTracker(Ts, mode=cfg.tracker_mode, limits=Limits(v_max=p.wheel_radius * p.max_wheel_speed, omega_max=w_lim))
     mapper = None
     if cfg.planner == "lidar":
         from src.planning.lidar_map import LidarMapper

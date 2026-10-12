@@ -207,9 +207,11 @@ def plot_episode(res, out_dir: Path, title: str = "") -> None:
 
 
 def plot_drift(results, path: Path) -> dict:
-    """Position and heading error against distance travelled since the last marker fix, pooled over episodes."""
+    """Position and heading error against distance travelled since the last marker fix, pooled over the episodes that
+    docked. A failed run (for example a robot stuck against an obstacle) would swamp the statistics, and its cause is
+    reported separately."""
     D, Ep, S, H = [], [], [], []
-    for r in results:
+    for r in [r for r in results if r.success]:
         hd = hidden_drift(r.log)
         D.append(hd["dist"]); Ep.append(hd["pos_err"]); S.append(hd["pos_sd"]); H.append(hd["head_err"])
     D, Ep, S, H = map(np.concatenate, (D, Ep, S, H))

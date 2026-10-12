@@ -1,14 +1,14 @@
 [
  [
-  3.6,
+  3.7,
   "localised from 3 marker fixes"
  ],
  [
-  19.9,
+  17.5,
   "docking reference built"
  ],
  [
-  28.6,
-  "stop rule: estimated distance to go 0.001 m"
+  26.2,
+  "stop rule: estimated distance to go -0.000 m"
  ]
 ]

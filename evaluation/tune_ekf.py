@@ -58,7 +58,7 @@ def one(args):
             "final_error": r.final_error.tolist(), "duration": r.duration}
 
 
-GRID = [(q, 1.0) for q in (1.0, 2.0, 3.0, 5.0)] + [(5.0, y) for y in (2.0, 3.0, 4.0)]
+GRID = [(q, y) for q in (1.0, 2.0, 3.0, 5.0) for y in (1.0, 2.0, 3.0)]
 
 
 def main(grid=GRID, seeds=(1, 2), workers: int = 6) -> None:

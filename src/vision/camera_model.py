@@ -6,8 +6,9 @@ writes them into models/track_a_room.xml), so the intrinsics follow from them ex
     fy = (H / 2) / tan(fovy / 2),   fx = fy (MuJoCo renders square pixels),
     cx = (W - 1) / 2,   cy = (H - 1) / 2   (OpenCV puts pixel centres on integer coordinates)
 
-There is no lens distortion in the renderer, so the distortion coefficients are zero. tests/test_vision.py checks
-these intrinsics by projecting known world points and comparing with the rendered image.
+There is no lens distortion in the renderer, so the distortion coefficients are zero. The intrinsics are checked
+indirectly by the vision characterisation (evaluation/vision_characterisation.py): after the range-bias correction
+the mean pose error is below 1 mm at short range. A dedicated projection test is still to be written.
 
 Axis conventions (docs/frames.md):
 - MuJoCo camera frame: x to the image right, y up, looking along -z.
