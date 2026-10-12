@@ -14,3 +14,14 @@ mujoco_files/.layout_*
 results/random_rooms/*
 !results/random_rooms/seed_3/
 !results/random_rooms/summary_*.csv
+# Calibration figures and summaries shown in the README.
+!results/camera_calibration/
+results/camera_calibration/*
+!results/camera_calibration/vision_errors.png
+!results/camera_calibration/vision_summary.json
+!results/camera_calibration/vision_dynamic.json
+!results/calibration/
+results/calibration/*
+!results/calibration/odometry_calibration.png
+!results/calibration/wheel_calibration.json
+!results/calibration/kalman_filter_tuning.json

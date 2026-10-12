@@ -1,0 +1,202 @@
+{
+  "source": "experiments/calibration/calibrate_wheels.py, 28 manoeuvres, 1740 steps, default odometry noise",
+  "scale_v": 0.9965822930375549,
+  "scale_omega": 0.992375486055155,
+  "effective_wheel_separation_m": 0.16122929500810684,
+  "extra_noise_per_step": {
+    "q_xy_m": 0.0003556269303880997,
+    "k_dist": 0.0002760610987161137,
+    "q_theta_rad": 0.0009760945932370506,
+    "k_turn": 0.0014961585770151224
+  },
+  "residual_std_per_step_calibrated": [
+    0.0004979317984653723,
+    4.3862926205787116e-05,
+    0.0010263445931403227
+  ],
+  "residual_window_std_per_step_calibrated": [
+    0.0004753303559886476,
+    0.00013800199708390633,
+    0.0011664015021296504
+  ],
+  "residual_window_std_per_step_uncalibrated": [
+    0.00047518905843326896,
+    0.00014567107430689342,
+    0.0016003691003246216
+  ],
+  "extra_std_after_odometry_noise": [
+    0.0,
+    0.00013800199708390633,
+    0.0006004102465567231
+  ],
+  "per_manoeuvre": [
+    {
+      "v": 0.05,
+      "omega": 0.0,
+      "dist_ratio": 1.0065786673906723,
+      "turn_ratio": null
+    },
+    {
+      "v": 0.1,
+      "omega": 0.0,
+      "dist_ratio": 1.0023919098346525,
+      "turn_ratio": null
+    },
+    {
+      "v": 0.15,
+      "omega": 0.0,
+      "dist_ratio": 0.9942423566504501,
+      "turn_ratio": null
+    },
+    {
+      "v": 0.2,
+      "omega": 0.0,
+      "dist_ratio": 0.9981250786651382,
+      "turn_ratio": null
+    },
+    {
+      "v": 0.06,
+      "omega": -0.8,
+      "dist_ratio": 1.0090951393842706,
+      "turn_ratio": 0.9994059527310648
+    },
+    {
+      "v": 0.06,
+      "omega": -0.5,
+      "dist_ratio": 1.0126595952357724,
+      "turn_ratio": 0.9846704712242941
+    },
+    {
+      "v": 0.06,
+      "omega": -0.2,
+      "dist_ratio": 1.0233707053089913,
+      "turn_ratio": 1.001256059396127
+    },
+    {
+      "v": 0.06,
+      "omega": 0.2,
+      "dist_ratio": 1.0261331271949399,
+      "turn_ratio": 0.9987000218790687
+    },
+    {
+      "v": 0.06,
+      "omega": 0.5,
+      "dist_ratio": 0.9960184191333012,
+      "turn_ratio": 0.991509772440984
+    },
+    {
+      "v": 0.06,
+      "omega": 0.8,
+      "dist_ratio": 1.01363622559182,
+      "turn_ratio": 0.9876962305383934
+    },
+    {
+      "v": 0.1,
+      "omega": -0.8,
+      "dist_ratio": 1.0110009682231071,
+      "turn_ratio": 0.9909220004582586
+    },
+    {
+      "v": 0.1,
+      "omega": -0.5,
+      "dist_ratio": 0.9917650995615142,
+      "turn_ratio": 0.990734469988639
+    },
+    {
+      "v": 0.1,
+      "omega": -0.2,
+      "dist_ratio": 0.992135642891218,
+      "turn_ratio": 0.9916708860268916
+    },
+    {
+      "v": 0.1,
+      "omega": 0.2,
+      "dist_ratio": 0.9862667433452399,
+      "turn_ratio": 0.993792478690603
+    },
+    {
+      "v": 0.1,
+      "omega": 0.5,
+      "dist_ratio": 0.9918166642321087,
+      "turn_ratio": 0.9941841907466389
+    },
+    {
+      "v": 0.1,
+      "omega": 0.8,
+      "dist_ratio": 0.9810887279358644,
+      "turn_ratio": 0.9937665692912986
+    },
+    {
+      "v": 0.15,
+      "omega": -0.8,
+      "dist_ratio": 0.9996184076859281,
+      "turn_ratio": 0.9959743010597183
+    },
+    {
+      "v": 0.15,
+      "omega": -0.5,
+      "dist_ratio": 1.0075563486343764,
+      "turn_ratio": 0.992687190113781
+    },
+    {
+      "v": 0.15,
+      "omega": -0.2,
+      "dist_ratio": 0.9991620293625925,
+      "turn_ratio": 0.9902899303632979
+    },
+    {
+      "v": 0.15,
+      "omega": 0.2,
+      "dist_ratio": 0.9997924896346345,
+      "turn_ratio": 0.9900107035712823
+    },
+    {
+      "v": 0.15,
+      "omega": 0.5,
+      "dist_ratio": 1.0002190440578662,
+      "turn_ratio": 1.0013113995649454
+    },
+    {
+      "v": 0.15,
+      "omega": 0.8,
+      "dist_ratio": 0.9991447875969814,
+      "turn_ratio": 0.9922183545115495
+    },
+    {
+      "v": 0.0,
+      "omega": -1.0,
+      "dist_ratio": null,
+      "turn_ratio": 0.9951133266564276
+    },
+    {
+      "v": 0.0,
+      "omega": -0.5,
+      "dist_ratio": null,
+      "turn_ratio": 0.9823104685254551
+    },
+    {
+      "v": 0.0,
+      "omega": -0.3,
+      "dist_ratio": null,
+      "turn_ratio": 0.9689504411878893
+    },
+    {
+      "v": 0.0,
+      "omega": 0.3,
+      "dist_ratio": null,
+      "turn_ratio": 0.9791755362378196
+    },
+    {
+      "v": 0.0,
+      "omega": 0.5,
+      "dist_ratio": null,
+      "turn_ratio": 0.9928581587551939
+    },
+    {
+      "v": 0.0,
+      "omega": 1.0,
+      "dist_ratio": null,
+      "turn_ratio": 0.9951123100383539
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "dynamic_inflation": [
+    1.0,
+    1.0,
+    2.2523766262805656
+  ],
+  "normalised_std": [
+    0.5884669421989843,
+    0.3998101839663,
+    2.2523766262805656
+  ],
+  "episodes": {
+    "north_west/11": "success",
+    "north_west/12": "success",
+    "north_west/13": "success",
+    "south_west/11": "success",
+    "south_west/12": "success",
+    "south_west/13": "success",
+    "south/11": "success",
+    "south/12": "success",
+    "south/13": "success",
+    "north/11": "success",
+    "north/12": "success",
+    "north/13": "success",
+    "centre/11": "success",
+    "centre/12": "success",
+    "centre/13": "success"
+  },
+  "n": 2498,
+  "n_flips": 44,
+  "by_range": [
+    {
+      "range_m": "0.0-0.5",
+      "n": 630,
+      "mean_mm_mm_deg": [
+        -0.37,
+        0.02,
+        -0.07
+      ],
+      "std_mm_mm_deg": [
+        0.21,
+        0.15,
+        0.53
+      ],
+      "normalised_std": [
+        0.04,
+        0.03,
+        1.05
+      ]
+    },
+    {
+      "range_m": "0.5-1.0",
+      "n": 806,
+      "mean_mm_mm_deg": [
+        -2.09,
+        0.02,
+        0.1
+      ],
+      "std_mm_mm_deg": [
+        1.06,
+        0.28,
+        1.88
+      ],
+      "normalised_std": [
+        0.21,
+        0.06,
+        3.51
+      ]
+    },
+    {
+      "range_m": "1.0-1.5",
+      "n": 228,
+      "mean_mm_mm_deg": [
+        -4.01,
+        0.13,
+        -0.02
+      ],
+      "std_mm_mm_deg": [
+        1.08,
+        1.49,
+        2.39
+      ],
+      "normalised_std": [
+        0.21,
+        0.3,
+        2.82
+      ]
+    },
+    {
+      "range_m": "1.5-2.0",
+      "n": 325,
+      "mean_mm_mm_deg": [
+        -5.16,
+        0.54,
+        -0.06
+      ],
+      "std_mm_mm_deg": [
+        3.97,
+        2.49,
+        0.75
+      ],
+      "normalised_std": [
+        0.4,
+        0.5,
+        0.34
+      ]
+    },
+    {
+      "range_m": "2.0-3.6",
+      "n": 509,
+      "mean_mm_mm_deg": [
+        2.28,
+        0.36,
+        -0.08
+      ],
+      "std_mm_mm_deg": [
+        20.78,
+        5.19,
+        2.4
+      ],
+      "normalised_std": [
+        1.06,
+        0.76,
+        0.55
+      ]
+    }
+  ]
+}

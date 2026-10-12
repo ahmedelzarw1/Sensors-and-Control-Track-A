@@ -293,8 +293,10 @@ def main(n: int = 4000, fit_only: bool = False) -> None:
         "table_pass2_corrected": distance_table(val_rows),
     }
     NOISE_JSON.parent.mkdir(exist_ok=True)
-    NOISE_JSON.write_text(json.dumps({k_: summary[k_] for k_ in ("source", "range_bias_k_per_m", "range_bias_model",
-                                                                 "noise_model", "coeffs")}, indent=2) + "\n")
+    # Keep what other scripts wrote to the same file (the in-motion factor from camera_noise_while_driving.py).
+    cfg = json.loads(NOISE_JSON.read_text()) if NOISE_JSON.exists() else {}
+    cfg.update({k_: summary[k_] for k_ in ("source", "range_bias_k_per_m", "range_bias_model", "noise_model", "coeffs")})
+    NOISE_JSON.write_text(json.dumps(cfg, indent=2) + "\n")
     (OUT / "vision_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     plot(cal_rows, val_rows, k, coeffs, OUT / "vision_errors.png")
     print(json.dumps(summary, indent=1))
