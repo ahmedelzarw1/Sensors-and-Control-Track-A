@@ -2,7 +2,7 @@
 
 The official ROBOTIS TurtleBot3 Burger model in MuJoCo localises itself from an ArUco marker on a charging station, plans a path around the
 obstacles in a room, tracks it with an LQR controller acting on an EKF estimate, and docks at the station. The
-controller never receives ground truth. Ground truth is read only by `evaluation/` to measure the results.
+controller never receives ground truth. Ground truth is read only by `experiments/` to measure the results.
 
 Status: Stage 1 (end-to-end simulation) working. LiDAR-based navigation (Stage 2) and the Monte Carlo evaluation
 (Stage 3) are in progress.
@@ -23,9 +23,9 @@ without a display, set `MUJOCO_GL=egl` (or `osmesa`) before running. The Linux b
 ## Running the simulation
 
 ```
-python scripts/run_demo.py                 # all five start pads; video of the first
-python scripts/run_demo.py --video-all     # a video for every start pad
-python scripts/run_demo.py --hidden        # also the two start pads without a view of the marker
+python commands/run_demo.py                 # all five start pads; video of the first
+python commands/run_demo.py --video-all     # a video for every start pad
+python commands/run_demo.py --hidden        # also the two start pads without a view of the marker
 ```
 
 Output goes to `results/demo/<start>/`: `demo.mp4` (top-down view with the true path, the EKF estimate and its 3 sigma
@@ -36,23 +36,23 @@ To watch a run live in the interactive MuJoCo viewer (add `--random` for a rando
 serial monitor):
 
 ```
-python .venv/bin/mjpython scripts/view_live.py --start centre     # macOS
-python .venv/bin/mjpython scripts/view_live.py --random 3         # macOS, random layout seed 3
-python scripts/view_live.py --start centre                        # Linux
+python .venv/bin/mjpython commands/watch_live.py --start centre     # macOS
+python .venv/bin/mjpython commands/watch_live.py --random 3         # macOS, random layout seed 3
+python commands/watch_live.py --start centre                        # Linux
 ```
 
 Random layouts (random obstacles and start pad, checked for clashes; see below):
 
 ```
-python scripts/run_random.py                     # one new random layout, with the serial monitor printout
-python scripts/run_random.py --seed 3            # reproduce layout 3
-python scripts/run_random.py --seed 100 --count 30 --quiet --no-video   # 30 layouts and a success rate
+python commands/run_random_rooms.py                     # one new random layout, with the serial monitor printout
+python commands/run_random_rooms.py --seed 3            # reproduce layout 3
+python commands/run_random_rooms.py --seed 100 --count 30 --quiet --no-video   # 30 layouts and a success rate
 ```
 
 ## Robot model
 
-The robot is the official ROBOTIS TurtleBot3 Burger MuJoCo model (`third_party/robotis_mujoco_menagerie/`, Apache 2.0),
-used unmodified. `scripts/make_track_a_scene.py` writes a patched copy to `models/tb3_burger.xml` and builds the
+The robot is the official ROBOTIS TurtleBot3 Burger MuJoCo model (`downloaded_robot_model/`, Apache 2.0),
+used unmodified. `commands/build_mujoco_files.py` writes a patched copy to `mujoco_files/robot.xml` and builds the
 scenes around it. Every patch is asserted to apply and is listed in the generated file.
 
 Driven as shipped, the model did not follow velocity commands. Three faults were found, and each one masked the
@@ -77,12 +77,12 @@ others, so fixing any single one changed little:
 The ROBOTIS Burger has no camera and no LiDAR sensor. This project adds a forward camera 0.056 m ahead of and 0.11 m
 above the base origin (an assumption: the real Burger ships without a camera), and casts the LiDAR beams from the
 origin of the ROBOTIS LDS-01 mesh using the LDS-01 specification. The ROBOTIS wheel limit of 6.67 rad/s gives the
-tracker limits of 0.22 m/s and 2.75 rad/s. `tests/test_platform.py` checks the geometry, the contacts, the drive
+tracker limits of 0.22 m/s and 2.75 rad/s. `tests/test_simulated_robot.py` checks the geometry, the contacts, the drive
 behaviour and the robot radius against the model.
 
 ## Random layouts
 
-`src/random_layout.py` draws a new room arrangement from a seed: 3 to 5 obstacles (boxes of any rotation and
+`robot_code/room/random_room.py` draws a new room arrangement from a seed: 3 to 5 obstacles (boxes of any rotation and
 cylinders, random sizes and positions) and a random start pad and heading. Every layout is reproducible from its seed.
 Candidates are redrawn until every rule holds:
 
@@ -96,11 +96,11 @@ Candidates are redrawn until every rule holds:
 - After the MuJoCo world is built and the robot is placed (the start pad plus a random placement error), MuJoCo must
   report no contact between the robot and any obstacle or wall.
 
-`tests/test_random_layout.py` checks every rule on 40 seeds, that the exact obstacle shapes never overlap, that the
+`tests/test_random_rooms.py` checks every rule on 40 seeds, that the exact obstacle shapes never overlap, that the
 MuJoCo world matches the layout, and that MuJoCo reports no robot contact on 10 seeds. The robot is given the layout as
 its map, and the start pad as the prior on its start pose.
 
-Outputs in `results/random/seed_<n>/` (example in the repository: `seed_3`):
+Outputs in `results/random_rooms/seed_<n>/` (example in the repository: `seed_3`):
 
 | File | What it shows |
 |---|---|
@@ -120,31 +120,60 @@ the robot) the true estimation error.
    0.0 localise   0.139 -0.897     -0.6      70.7       3.00   0.000    0.300           -      -      -            -        163.5
    0.5 >> localised from 3 marker fixes
    0.5 track      0.158 -0.908      5.0      46.6       1.21   0.041    0.119        2.19   31.6   0.13  yes     0.0        143.7
-   1.0 track      0.188 -0.908     10.3      45.1       1.20   0.106    0.365        2.19   26.7   2.53  yes     4.8        137.3
+   1.0 track      0.188 -0.908     10.3      45.1       1.20   0.106    0.365        2.19   26.7   2.46  yes     4.7        137.3
 ```
 
-## Repository layout
+## Where everything is
 
-| Path | Contents |
+```
+robot_code/                  EVERYTHING THAT RUNS ON THE ROBOT (it never sees the true position)
+  robot_brain.py             decides what to do every 0.1 s: find marker, plan, drive, dock
+  data_types.py              the messages the parts pass to each other
+  room/                      the map: room_map.py (the room the robot is given), random_room.py (random rooms)
+  simulated_robot/           the TurtleBot3 in MuJoCo: simulator.py (wheels, odometry, LiDAR), camera.py,
+                             mujoco_room.py (builds the room)
+  movement_maths/            unicycle_model.py: how the robot moves, linearisation, controllability
+  vision/                    marker_detection.py (find the ArUco marker), camera_maths.py, marker_noise.py
+  localisation/              kalman_filter.py: "where am I?" (the EKF)
+  path_planning/             astar_grid.py (A*), smooth_path.py, plan_path.py, reference_path.py
+  controller/                lqr_controller.py (LQR), smooth_commands.py
+  docking/                   docking.py: final approach and stop
+
+experiments/                 RUNS THE ROBOT AND CHECKS IT AGAINST THE TRUTH
+  run_simulation.py          one full run in MuJoCo
+  true_position.py           the only place the true position is read
+  scores.py                  errors, NEES, success-rate intervals
+  calibration/               measures the numbers in settings/
+  outputs/                   plots, video, photos, serial monitor
+
+commands/                    THE THINGS YOU RUN: run_demo.py, run_random_rooms.py, watch_live.py, build_mujoco_files.py
+settings/                    measured numbers the robot reads (camera noise, wheel calibration, filter tuning, LiDAR)
+mujoco_files/                robot.xml, room.xml, open_floor.xml (built by commands/build_mujoco_files.py)
+downloaded_robot_model/      the untouched official ROBOTIS TurtleBot3 Burger model
+tests/                       automatic checks: python -m pytest -q
+results/                     demo/ and random_rooms/
+```
+
+Each folder's `__init__.py` lists what is inside it.
+
+| Question | File and function |
 |---|---|
-| `src/known_map.py` | the room, obstacles, charging station and marker pose given to the robot (configuration, not ground truth) |
-| `src/tb3/` | shared data types, the MuJoCo platform wrapper (odometry, LiDAR), the simulated camera |
-| `src/model/` | unicycle and tracking-error models, Jacobians, controllability and observability helpers |
-| `src/control/` | LQR tracker (fixed, scheduled, time-varying gains) and the command slew-rate limiter |
-| `src/vision/` | camera intrinsics, ArUco detection, pose by solvePnP, measurement noise model |
-| `src/estimation/` | EKF: odometry prediction, marker pose update, chi-square gating |
-| `src/planning/` | occupancy grid, A*, path smoothing, velocity profile, reference trajectories |
-| `src/docking/` | docking trajectory, stop rule, marker search |
-| `src/mission.py` | the on-robot pipeline: localise, plan, track, dock |
-| `src/random_layout.py` | random obstacles and start pad with the no-clash rules |
-| `src/tb3/scene.py` | builds the MuJoCo room for any layout |
-| `evaluation/` | the only code that reads ground truth: episode runner, calibration and characterisation scripts, metrics, plots, video, photos, serial monitor |
-| `scripts/` | scene generation, demo runner, random-layout runner, live viewer |
-| `config/` | calibration and tuning results read by the pipeline, each written by a script in `evaluation/` |
-| `models/` | generated MuJoCo scenes and the marker texture (regenerate with `python scripts/make_track_a_scene.py`) |
-| `third_party/` | the unmodified ROBOTIS TurtleBot3 Burger model (Apache 2.0) and the LDS-01 specification (MIT) |
-| `tests/` | model, platform, structure and closed-loop tests |
-| `results/demo/`, `results/random/` | the demo runs and the random-layout example and summaries shown below |
+| How does the robot move (kinematics)? | `robot_code/movement_maths/unicycle_model.py`: `f_unicycle` |
+| How are (v, omega) turned into wheel speeds, and wheel encoders into odometry? | `robot_code/simulated_robot/simulator.py`: `wheel_speeds`, `step` |
+| Where is the physics simulated? | `robot_code/simulated_robot/simulator.py`: `step` (calls `mujoco.mj_step` 50 times per 0.1 s) |
+| State-space model, linearisation, discretisation | `robot_code/movement_maths/unicycle_model.py`: `tracking_error`, `linearise`, `zoh` |
+| Controllability and observability | `robot_code/movement_maths/unicycle_model.py`: `ctrb`, `observability_matrix_ltv`, `H_marker_pose`; checks in `tests/test_movement_maths.py` |
+| LQR (Q, R, gain) | `robot_code/controller/lqr_controller.py`: `bryson`, `dlqr`, `design_gain`, `LQRTracker.command` |
+| Open loop vs closed loop | `robot_code/controller/lqr_controller.py`: `LQRTracker.command` (reference speeds plus feedback on the estimate) |
+| EKF predict and update | `robot_code/localisation/kalman_filter.py`: `MarkerEKF.predict`, `MarkerEKF.update_marker` |
+| Where do Q and R come from? | `experiments/calibration/` and the values in `settings/` |
+| Camera model and frames | `robot_code/vision/camera_maths.py`, `robot_code/vision/marker_detection.py`: `to_base_frame` |
+| Marker detection and pose | `robot_code/vision/marker_detection.py`: `ArucoDetector.detect`, `MarkerSensor.measure` |
+| Path around the obstacles | `robot_code/path_planning/astar_grid.py`: `astar`; `robot_code/path_planning/smooth_path.py`: `fillet_path`, `speed_profile` |
+| Docking and the stop rule | `robot_code/docking/docking.py`: `docking_reference`, `should_stop` |
+| What does the robot do in each phase? | `robot_code/robot_brain.py`: `DockingMission.step`, `_decide` |
+| Random layouts and the no-clash rules | `robot_code/room/random_room.py`: `sample_layout` |
+| How is ground truth kept away from the robot? | `experiments/true_position.py`; enforced by `tests/test_robot_never_sees_truth.py` |
 
 ## How it works
 
@@ -161,39 +190,39 @@ the robot) the true estimation error.
    estimated distance to the dock reaches zero, and docking is abandoned for a new marker search if no marker fix
    arrives for 3 s.
 
-Values that come from measurement are produced by scripts and stored in `config/`:
+Values that come from measurement are produced by scripts and stored in `settings/`:
 
 | Value | Script | Result |
 |---|---|---|
-| Marker range bias and noise model | `evaluation/vision_characterisation.py` | range bias corrected (residual mean -0.4 mm on an independent sweep), detection 94 to 99 percent at every range up to 3.6 m when the marker is fully in view |
-| In-motion vision noise | `evaluation/vision_dynamic.py` | yaw noise 2.24 times the static model, position within the static model |
-| Odometry calibration | `evaluation/odometry_calibration.py` | v scale 0.997, omega scale 0.992 (effective wheel separation 0.161 m) |
-| EKF consistency tuning | `evaluation/tune_ekf.py` | process noise x5, yaw measurement std x2: mean NEES 2.99, 0.1 percent of updates gated out (12 settings x 10 runs, all docked) |
+| Marker range bias and noise model | `experiments/calibration/calibrate_camera.py` | range bias corrected (residual mean -0.4 mm on an independent sweep), detection 94 to 99 percent at every range up to 3.6 m when the marker is fully in view |
+| In-motion vision noise | `experiments/calibration/camera_noise_while_driving.py` | yaw noise 2.25 times the static model, position within the static model |
+| Odometry calibration | `experiments/calibration/calibrate_wheels.py` | v scale 0.997, omega scale 0.992 (effective wheel separation 0.161 m) |
+| EKF consistency tuning | `experiments/calibration/tune_kalman_filter.py` | process noise x5, yaw measurement std x2: mean NEES 2.93, 0.05 percent of updates gated out (12 settings x 10 runs, all docked) |
 
 ## Results
 
-One run per start pad, seed 1, from `python scripts/run_demo.py --hidden` (`results/demo/summary.csv`). Docking
+One run per start pad, seed 1, from `python commands/run_demo.py --hidden` (`results/demo/summary.csv`). Docking
 success requires the true final pose within 3 cm along the approach, 2 cm laterally and 5 degrees (these tolerances
 are our assumption for a charging dock with spring contacts).
 
 | Start pad | Marker visible at start | Result | Error along | Error lateral | Heading error | Time |
 |---|---|---|---|---|---|---|
-| north_west | yes | docked | -2.4 mm | 3.7 mm | -0.41 deg | 22.4 s |
-| south_west | yes | docked | -1.0 mm | 3.4 mm | -0.53 deg | 25.8 s |
-| south | yes | docked | 0.8 mm | -6.2 mm | 0.68 deg | 21.9 s |
-| north | yes | docked | -2.7 mm | 5.2 mm | -0.58 deg | 16.8 s |
-| centre | yes | docked | -0.9 mm | -2.8 mm | 0.37 deg | 26.2 s |
-| far_west | no | docked | 0.7 mm | -6.8 mm | 0.80 deg | 49.2 s |
-| far_north_west | no | docked | -3.5 mm | -11.6 mm | 1.18 deg | 50.8 s |
+| north_west | yes | docked | -0.1 mm | 3.0 mm | -0.45 deg | 22.4 s |
+| south_west | yes | docked | -2.5 mm | -9.6 mm | 0.90 deg | 25.8 s |
+| south | yes | docked | -2.1 mm | -7.9 mm | 0.90 deg | 21.9 s |
+| north | yes | docked | -3.0 mm | 5.7 mm | -0.64 deg | 16.8 s |
+| centre | yes | docked | -0.7 mm | -4.9 mm | 0.60 deg | 26.2 s |
+| far_west | no | docked | -0.9 mm | -4.3 mm | 0.39 deg | 49.2 s |
+| far_north_west | no | docked | -3.8 mm | -10.8 mm | 1.13 deg | 50.8 s |
 
 All seven runs docked.
 
-Random layouts, one run each (`results/random/summary_*.csv`):
+Random layouts, one run each (`results/random_rooms/summary_*.csv`):
 
 | Batch | Layouts | Docked | 95 percent Wilson interval | Docking position error (median, max) |
 |---|---|---|---|---|
-| marker in view at the start (seeds 100 to 129) | 30 | 30 | 89 to 100 percent | 4.1 mm, 15.3 mm |
-| hidden starts allowed (seeds 200 to 229) | 30 (6 hidden) | 30 (6 of 6 hidden) | 89 to 100 percent (61 to 100 percent for the 6 hidden) | 5.4 mm, 13.3 mm |
+| marker in view at the start (seeds 100 to 129) | 30 | 30 | 89 to 100 percent | 5.4 mm, 15.5 mm |
+| hidden starts allowed (seeds 200 to 229) | 30 (6 hidden) | 30 (6 of 6 hidden) | 89 to 100 percent (61 to 100 percent for the 6 hidden) | 6.1 mm, 12.4 mm |
 
 Repeated trials under varied sensor and platform conditions (noise, wheel radius mismatch, friction, pushes, marker
 dropout) are the next step.
@@ -203,8 +232,7 @@ dropout) are the next step.
 - **Start pads without a view of the marker are a risk.** Both hidden pads docked in this run, but from far_west the
   estimate drifted up to 140 mm while the marker was hidden. Over hidden stretches of 0.5 to 1 m, only 67 percent of
   the position errors were inside the filter's 3 sigma bound, so the filter is overconfident when it is blind for long.
-  On the earlier Hakoniwa model the same start ended against the central obstacle. The LiDAR is scanned but not yet
-  used for navigation or collision detection (Stage 2).
+  The LiDAR is scanned but not yet used for navigation or collision detection (Stage 2).
 - **Varied conditions are not yet tested.** The random layouts vary the room and the start (60 runs), but not the
   sensor noise, wheel radius, friction, pushes or marker dropout.
 - **Lateral docking error uses most of its tolerance in some layouts.** Over the 60 random layouts the largest lateral
@@ -215,7 +243,7 @@ dropout) are the next step.
   range the marker's yaw is weak, so the rotation of the robot about the marker is poorly observed until it is closer.
 - **Only 6 hidden starts were sampled.** All docked, but 6 runs are too few to claim reliability (interval 61 to 100
   percent).
-- **The filter is not equally consistent in every run.** Mean NEES ranges from 1.6 to 6.7 across the seven runs (3 is
+- **The filter is not equally consistent in every run.** Mean NEES ranges from 1.4 to 6.4 across the seven runs (3 is
   ideal); the north_west, south_west and far_west runs are above 4.
 - **The position part of the measurement noise is conservative.** Median NIS is far below its expected value, because
   of a 5 mm floor on the position standard deviation.
@@ -227,15 +255,14 @@ dropout) are the next step.
 | Member | Contribution |
 |---|---|
 | Ahmed El Zarw | State-space model, controllability and observability analysis, LQR tracker, frames and interfaces, platform wrapper, obstacle-aware path, evaluation harness, integration |
-| TODO | EKF fusing wheel odometry with camera marker measurements (baseline in `src/estimation/`, to be reviewed and extended) |
-| TODO | ArUco detection, camera calibration, docking trajectory (baseline in `src/vision/` and `src/docking/`, to be reviewed and extended) |
+| TODO | EKF fusing wheel odometry with camera marker measurements (baseline in `robot_code/localisation/`, to be reviewed and extended) |
+| TODO | ArUco detection, camera calibration, docking trajectory (baseline in `robot_code/vision/` and `robot_code/docking/`, to be reviewed and extended) |
 
 ## Acknowledgements
 
 - TurtleBot3 Burger MuJoCo model and meshes: ROBOTIS, `robotis_mujoco_menagerie`, Apache License 2.0
-  (`third_party/robotis_mujoco_menagerie/`). The generated `models/tb3_burger.xml` is a modified copy.
-- LDS-01 LiDAR specification: Hakoniwa Lab, `hakoniwa-mujoco-robots`, MIT licence (`third_party/hakoniwa-mujoco-robots/`).
-  Its TurtleBot3 model was used until the switch to the ROBOTIS model and is no longer used.
+  (`downloaded_robot_model/`). The generated `mujoco_files/robot.xml` is a modified copy.
+- LDS-01 LiDAR specification: ROBOTIS TurtleBot3 e-Manual (values in `settings/lidar_spec.json`).
 - Linearisation, discretisation, LQR and EKF structure adapted from the weekly tutorials and from Ahmed El Zarw's
   41014 Assessment 3 work.
 - The tracking-error model is the standard Kanayama form.
@@ -248,7 +275,7 @@ Purpose: Ahmed El Zarw specified the requirements, the design constraints and th
 development. Claude Code generated most of the code and documentation in this repository under that direction. This
 includes the platform wrapper, the models and the LQR tracker; the room scene, the camera rendering and the ArUco
 measurement pipeline with its characterisation; the baseline EKF, docking and planning modules; the odometry
-calibration and filter tuning; the mission logic; and the evaluation, demo and viewer scripts. Claude Code also ran the
+calibration and filter tuning; the mission logic; and the evaluation, demo and viewer commands. Claude Code also ran the
 diagnostics that found the platform issues listed above, including the three faults in the ROBOTIS model, and adapted
 the project to that model.
 

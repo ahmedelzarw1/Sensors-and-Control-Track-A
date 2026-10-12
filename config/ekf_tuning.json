@@ -1,9 +1,0 @@
-{
-  "source": "evaluation/tune_ekf.py, 5 start poses x 2 seeds per setting",
-  "rule": "smallest (q_inflation, yaw_r_scale) with all runs docked, |mean NEES - 3| <= 0.25 and gate rejections <= 2%",
-  "q_inflation": 5.0,
-  "yaw_r_scale": 2.0,
-  "mean_nees": 2.990702733679858,
-  "frac_rejected": 0.0010783858998144713,
-  "median_nis": 0.1651980847879795
-}

@@ -1,0 +1,11 @@
+{
+  "source": "experiments/calibration/calibrate_wheels.py, 28 manoeuvres, 1740 steps, default odometry noise",
+  "scale_v": 0.9965822930375549,
+  "scale_omega": 0.992375486055155,
+  "extra_noise_per_step": {
+    "q_xy_m": 0.0003556269303880997,
+    "k_dist": 0.0002760610987161137,
+    "q_theta_rad": 0.0009760945932370506,
+    "k_turn": 0.0014961585770151224
+  }
+}

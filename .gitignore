@@ -8,9 +8,9 @@ results/*
 !results/demo/
 
 # Temporary scene files written while loading a random layout.
-models/.layout_*
+mujoco_files/.layout_*
 # One random-layout example and the random-layout summaries are kept (README).
-!results/random/
-results/random/*
-!results/random/seed_3/
-!results/random/summary_*.csv
+!results/random_rooms/
+results/random_rooms/*
+!results/random_rooms/seed_3/
+!results/random_rooms/summary_*.csv

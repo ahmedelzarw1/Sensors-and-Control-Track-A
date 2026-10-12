@@ -1,0 +1,9 @@
+{
+  "source": "experiments/calibration/tune_kalman_filter.py, 5 start poses x 2 seeds per setting",
+  "rule": "smallest (q_inflation, yaw_r_scale) with all runs docked, |mean NEES - 3| <= 0.25 and gate rejections <= 2%",
+  "q_inflation": 5.0,
+  "yaw_r_scale": 2.0,
+  "mean_nees": 2.9348207105894497,
+  "frac_rejected": 0.000510204081632653,
+  "median_nis": 0.13817161949582424
+}

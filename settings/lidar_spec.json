@@ -1,0 +1,10 @@
+{
+  "source": "ROBOTIS LDS-01 (HLS-LFCD2) specifications, TurtleBot3 e-Manual: detection distance 120 to 3500 mm, accuracy +-15 mm from 120 to 499 mm and +-5.0 percent from 500 to 3500 mm, angular resolution 1 degree, scan rate 5 Hz (300 rpm). The accuracy figures are treated as one standard deviation of Gaussian noise (our assumption, conservative).",
+  "range_min_m": 0.12,
+  "range_max_m": 3.5,
+  "sigma_near_m": 0.015,
+  "near_limit_m": 0.5,
+  "sigma_far_fraction": 0.05,
+  "angular_resolution_deg": 1.0,
+  "scan_rate_hz": 5.0
+}
