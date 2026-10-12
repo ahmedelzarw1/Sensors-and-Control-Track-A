@@ -25,3 +25,7 @@ results/calibration/*
 !results/calibration/odometry_calibration.png
 !results/calibration/wheel_calibration.json
 !results/calibration/kalman_filter_tuning.json
+
+# Duplicate copies that iCloud Drive creates during sync conflicts ("name 2.py").
+* 2
+* 2.*
