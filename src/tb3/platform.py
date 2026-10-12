@@ -157,6 +157,9 @@ class TB3Sim:
         x, y, th = pose
         self.data.qpos[a + 0], self.data.qpos[a + 1] = x, y
         self.data.qpos[a + 3: a + 7] = [np.cos(th / 2), 0.0, 0.0, np.sin(th / 2)]
+        # The start pose also becomes the model's default pose, so a reset from outside (for example the Reset button of
+        # the MuJoCo viewer) puts the robot back here and not at the world origin, which may be inside an obstacle.
+        self.model.qpos0[a: a + 7] = self.data.qpos[a: a + 7]
         mujoco.mj_forward(self.model, self.data)
         self.t = 0.0
         self._lidar_acc = 0.0

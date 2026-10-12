@@ -42,15 +42,26 @@ def main() -> None:
         args.seed, args.monitor = seed, True
         print_layout(layout, report)
 
-    state = {"viewer": None, "t0": None, "phase": None}
+    state = {"viewer": None, "t0": None, "phase": None, "sim": None, "cam": None}
+
+    def open_viewer(sim):
+        v = mujoco.viewer.launch_passive(sim.model, sim.data)
+        if state["cam"] is None:
+            v.cam.lookat[:] = [0.0, 0.0, 0.0]
+            v.cam.distance, v.cam.elevation, v.cam.azimuth = 5.5, -55.0, 90.0
+        else:  # keep the view the user chose before a reset
+            v.cam.lookat[:], v.cam.distance, v.cam.elevation, v.cam.azimuth = state["cam"]
+        return v
+
+    def reset_pressed(sim) -> bool:
+        """The viewer's Reset (button or Backspace) sets the simulation time back to zero behind the pipeline."""
+        return sim.data.time < sim.t - 0.05
 
     def step_hook(sim, mission):
         if state["viewer"] is None:
-            state["viewer"] = mujoco.viewer.launch_passive(sim.model, sim.data)
-            v = state["viewer"]
-            v.cam.lookat[:] = [0.0, 0.0, 0.0]
-            v.cam.distance, v.cam.elevation, v.cam.azimuth = 5.5, -55.0, 90.0
+            state["viewer"] = open_viewer(sim)
             state["t0"] = time.time() - sim.t / args.speed
+        state["sim"] = sim
         v = state["viewer"]
         if not v.is_running():
             raise KeyboardInterrupt
@@ -59,20 +70,46 @@ def main() -> None:
             if not args.monitor:
                 print(f"t = {sim.t:5.1f} s  phase: {state['phase']}")
         v.sync()
+        if reset_pressed(sim):
+            raise ViewerReset
         lag = state["t0"] + sim.t / args.speed - time.time()
         if lag > 0:
             time.sleep(lag)
 
+    def close_viewer():
+        v = state["viewer"]
+        if v is not None:
+            state["cam"] = (v.cam.lookat.copy(), v.cam.distance, v.cam.elevation, v.cam.azimuth)
+            v.close()
+        state["viewer"], state["phase"] = None, None
+
+    cfg = EpisodeConfig(start=args.start if layout is None else "random", seed=args.seed, layout=layout)
     try:
-        cfg = EpisodeConfig(start=args.start if layout is None else "random", seed=args.seed, layout=layout)
-        res = run_episode(cfg, step_hook=step_hook, frame_hook=SerialMonitor(every=5) if args.monitor else None)
-        e = res.final_error
-        print(f"{res.status}: {1000 * e[0]:.1f} mm along, {1000 * e[1]:.1f} mm lateral, "
-              f"{abs(e[2]) * 57.3:.2f} deg. Close the viewer window to exit.")
-        while state["viewer"] is not None and state["viewer"].is_running():
-            time.sleep(0.1)
+        while True:
+            try:
+                res = run_episode(cfg, step_hook=step_hook,
+                                  frame_hook=SerialMonitor(every=5) if args.monitor else None)
+                e = res.final_error
+                print(f"{res.status}: {1000 * e[0]:.1f} mm along, {1000 * e[1]:.1f} mm lateral, "
+                      f"{abs(e[2]) * 57.3:.2f} deg. Press Reset (or Backspace) in the viewer to run again, or close the "
+                      "window to exit.")
+                v, sim = state["viewer"], state["sim"]
+                while v is not None and v.is_running():
+                    v.sync()
+                    if reset_pressed(sim):
+                        raise ViewerReset
+                    time.sleep(0.05)
+                break
+            except ViewerReset:
+                print("\nReset pressed: restarting the run from the start pad (robot, estimator, planner and controller "
+                      "all start again).\n")
+                close_viewer()
     except KeyboardInterrupt:
         print("viewer closed")
+
+
+class ViewerReset(Exception):
+    """Raised when the Reset of the MuJoCo viewer is used, so the whole run restarts consistently."""
 
 
 if __name__ == "__main__":
