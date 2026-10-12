@@ -503,12 +503,13 @@ As a team we:
 Tool: Claude (Anthropic), used through the Claude chat interface and Claude Code.
 
 Purpose: the team set the requirements, the design decisions and the order of work listed in the contribution
-statement, directed the development and tested the results. Claude Code generated most of the code and documentation in
-this repository under that direction. This includes the platform wrapper, the models and the LQR tracker; the room
-scene, the camera rendering and the ArUco measurement pipeline with its calibration; the EKF, docking and planning
-modules; the odometry calibration and filter tuning; the robot's decision logic; the random rooms, photos and
-serial-monitor printout; the evaluation, demo and viewer commands; the project layout; and this README. Claude Code
-also ran the diagnostics that found the issues listed above, including the three faults in the ROBOTIS model.
+statement, directed the development and tested the results. Claude Code generated some of the code and documentation in
+this repository under that direction. This includes the platform wrapper and the ReadME setup as told by the students mentioned above.
+The robot model was taken off the github repo that was provided.
+Ahmed assisted in coding the LQR tracker; the room scene.
+Jeremy assisted with the camera rendering and the ArUco measurement pipeline with its calibration and the EKF.
+Janith worked on the docking and planning modules; the odometry calibration and filter tuning; the robot's decision logic.
+Claude code helped in randomising the rooms and the turtlebots starting position, photos and serial-monitor printout; the evaluation, demo and viewer commands; the project layout; and this README. Claude Code also ran the diagnostics that found the issues listed above, including the three faults in the ROBOTIS model.
 
 Each team member is responsible for reviewing and understanding the parts credited to them in the contribution
 statement.
