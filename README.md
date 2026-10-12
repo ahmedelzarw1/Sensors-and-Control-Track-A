@@ -32,11 +32,21 @@ Output goes to `results/demo/<start>/`: `demo.mp4` (top-down view with the true 
 ellipse, next to the robot camera view), `log.csv`, and plots of the path, the estimation errors with 3 sigma
 bounds, NEES and NIS, and the control effort. `results/demo/summary.csv` collects the runs.
 
-To watch a run live in the interactive MuJoCo viewer:
+To watch a run live in the interactive MuJoCo viewer (add `--random` for a random layout, which also prints the
+serial monitor):
 
 ```
 python .venv/bin/mjpython scripts/view_live.py --start centre     # macOS
+python .venv/bin/mjpython scripts/view_live.py --random 3         # macOS, random layout seed 3
 python scripts/view_live.py --start centre                        # Linux
+```
+
+Random layouts (random obstacles and start pad, checked for clashes; see below):
+
+```
+python scripts/run_random.py                     # one new random layout, with the serial monitor printout
+python scripts/run_random.py --seed 3            # reproduce layout 3
+python scripts/run_random.py --seed 100 --count 30 --quiet --no-video   # 30 layouts and a success rate
 ```
 
 ## Robot model
@@ -70,6 +80,49 @@ origin of the ROBOTIS LDS-01 mesh using the LDS-01 specification. The ROBOTIS wh
 tracker limits of 0.22 m/s and 2.75 rad/s. `tests/test_platform.py` checks the geometry, the contacts, the drive
 behaviour and the robot radius against the model.
 
+## Random layouts
+
+`src/random_layout.py` draws a new room arrangement from a seed: 3 to 5 obstacles (boxes of any rotation and
+cylinders, random sizes and positions) and a random start pad and heading. Every layout is reproducible from its seed.
+Candidates are redrawn until every rule holds:
+
+- Obstacles are at least 0.40 m apart and at least 0.40 m from the walls, measured between the circles that enclose
+  them. The robot needs 2 x (0.105 m radius + 0.075 m margin) = 0.36 m to pass, so every gap is passable and nothing
+  touches.
+- No obstacle enters the docking corridor in front of the charging station.
+- The start pad is at least 0.255 m from every obstacle and 0.305 m from every wall, outside the docking corridor and at
+  least 1 m from the pre-dock pose. By default the marker must be in view from it (`--allow-hidden` drops this rule).
+- The planner must find a path, otherwise the layout is redrawn.
+- After the MuJoCo world is built and the robot is placed (the start pad plus a random placement error), MuJoCo must
+  report no contact between the robot and any obstacle or wall.
+
+`tests/test_random_layout.py` checks every rule on 40 seeds, that the exact obstacle shapes never overlap, that the
+MuJoCo world matches the layout, and that MuJoCo reports no robot contact on 10 seeds. The robot is given the layout as
+its map, and the start pad as the prior on its start pose.
+
+Outputs in `results/random/seed_<n>/` (example in the repository: `seed_3`):
+
+| File | What it shows |
+|---|---|
+| `layout.png` | the layout with the clash rules drawn: bounding circles, the gap rule, the docking corridor, the planned path |
+| `photos/`, `contact_sheet.png` | robot camera photos (marker outline, pose axes, range) next to the room view at the start, the first marker detection, every phase change and the end |
+| `demo.mp4` | the whole run: top-down view next to the robot camera |
+| `monitor.txt` | the serial-monitor printout (below) |
+| `layout.json`, `log.csv`, plots | the layout and the checks it passed, the full log, the plots of `run_demo.py` |
+
+The terminal works like a serial monitor: first the randomised layout and the checks it passed, then twice a second
+what the robot calculates. Columns: EKF estimate and its 1 sigma uncertainty, LQR command, marker range and bearing,
+NIS and whether the filter used the measurement, estimated lateral tracking error, and (evaluation only, never seen by
+the robot) the true estimation error.
+
+```
+  t[s] phase      x^[m]  y^[m] th^[deg] sd_xy[mm] sd_th[deg]  v[m/s] w[rad/s] marker r[m] b[deg]    NIS used e_y[mm] true err[mm]
+   0.0 localise   0.139 -0.897     -0.6      70.7       3.00   0.000    0.300           -      -      -            -        163.5
+   0.5 >> localised from 3 marker fixes
+   0.5 track      0.158 -0.908      5.0      46.6       1.21   0.041    0.119        2.19   31.6   0.13  yes     0.0        143.7
+   1.0 track      0.188 -0.908     10.3      45.1       1.20   0.106    0.365        2.19   26.7   2.53  yes     4.8        137.3
+```
+
 ## Repository layout
 
 | Path | Contents |
@@ -83,13 +136,15 @@ behaviour and the robot radius against the model.
 | `src/planning/` | occupancy grid, A*, path smoothing, velocity profile, reference trajectories |
 | `src/docking/` | docking trajectory, stop rule, marker search |
 | `src/mission.py` | the on-robot pipeline: localise, plan, track, dock |
-| `evaluation/` | the only code that reads ground truth: episode runner, calibration and characterisation scripts, metrics, plots, video |
-| `scripts/` | scene generation, demo runner, live viewer |
+| `src/random_layout.py` | random obstacles and start pad with the no-clash rules |
+| `src/tb3/scene.py` | builds the MuJoCo room for any layout |
+| `evaluation/` | the only code that reads ground truth: episode runner, calibration and characterisation scripts, metrics, plots, video, photos, serial monitor |
+| `scripts/` | scene generation, demo runner, random-layout runner, live viewer |
 | `config/` | calibration and tuning results read by the pipeline, each written by a script in `evaluation/` |
 | `models/` | generated MuJoCo scenes and the marker texture (regenerate with `python scripts/make_track_a_scene.py`) |
 | `third_party/` | the unmodified ROBOTIS TurtleBot3 Burger model (Apache 2.0) and the LDS-01 specification (MIT) |
 | `tests/` | model, platform, structure and closed-loop tests |
-| `results/demo/` | the demo run shown below |
+| `results/demo/`, `results/random/` | the demo runs and the random-layout example and summaries shown below |
 
 ## How it works
 
@@ -131,7 +186,17 @@ are our assumption for a charging dock with spring contacts).
 | far_west | no | docked | 0.7 mm | -6.8 mm | 0.80 deg | 49.2 s |
 | far_north_west | no | docked | -3.5 mm | -11.6 mm | 1.18 deg | 50.8 s |
 
-All seven runs docked. These are single runs; repeated trials under varied conditions are the next step.
+All seven runs docked.
+
+Random layouts, one run each (`results/random/summary_*.csv`):
+
+| Batch | Layouts | Docked | 95 percent Wilson interval | Docking position error (median, max) |
+|---|---|---|---|---|
+| marker in view at the start (seeds 100 to 129) | 30 | 30 | 89 to 100 percent | 4.1 mm, 15.3 mm |
+| hidden starts allowed (seeds 200 to 229) | 30 (6 hidden) | 30 (6 of 6 hidden) | 89 to 100 percent (61 to 100 percent for the 6 hidden) | 5.4 mm, 13.3 mm |
+
+Repeated trials under varied sensor and platform conditions (noise, wheel radius mismatch, friction, pushes, marker
+dropout) are the next step.
 
 ## Known limitations
 
@@ -140,7 +205,16 @@ All seven runs docked. These are single runs; repeated trials under varied condi
   the position errors were inside the filter's 3 sigma bound, so the filter is overconfident when it is blind for long.
   On the earlier Hakoniwa model the same start ended against the central obstacle. The LiDAR is scanned but not yet
   used for navigation or collision detection (Stage 2).
-- **Results are single runs.** The Monte Carlo evaluation over varied conditions has not been run yet.
+- **Varied conditions are not yet tested.** The random layouts vary the room and the start (60 runs), but not the
+  sensor noise, wheel radius, friction, pushes or marker dropout.
+- **Lateral docking error uses most of its tolerance in some layouts.** Over the 60 random layouts the largest lateral
+  errors were 10 to 15 mm with about 1 degree of heading error (tolerance 20 mm): the short final straight does not
+  give the controller time to remove a sideways offset completely.
+- **The filter is briefly overconfident after localising from far away.** In the seed 3 example the true error
+  (144 mm) slightly exceeded the combined 3 sigma bound (140 mm) just after the robot localised from 2.2 m: at that
+  range the marker's yaw is weak, so the rotation of the robot about the marker is poorly observed until it is closer.
+- **Only 6 hidden starts were sampled.** All docked, but 6 runs are too few to claim reliability (interval 61 to 100
+  percent).
 - **The filter is not equally consistent in every run.** Mean NEES ranges from 1.6 to 6.7 across the seven runs (3 is
   ideal); the north_west, south_west and far_west runs are above 4.
 - **The position part of the measurement noise is conservative.** Median NIS is far below its expected value, because

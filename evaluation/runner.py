@@ -52,6 +52,7 @@ class EpisodeConfig:
     vision_static_noise_only: bool = False      # True: ignore the measured in-motion inflation (used to measure it)
     vision_r_scale: tuple = (1.0, 1.0, 1.0)     # extra multiplier on the measurement std (x, y, yaw), for tuning
     use_tuning: bool = True                     # False: ignore config/ekf_tuning.json (used by the tuning itself)
+    layout: Optional[km.Layout] = None          # None: the fixed room with start pad `start`; else a (random) layout
 
 
 @dataclass
@@ -90,16 +91,40 @@ def _apply_impulse(sim: TB3Sim, dv: float, dw: float) -> None:
     sim.data.qvel[dof + 5] += dw
 
 
-def run_episode(cfg: EpisodeConfig, frame_hook: Optional[Callable] = None,
-                step_hook: Optional[Callable] = None) -> EpisodeResult:
-    """frame_hook(k, image, mission, log) is called every control step (used for the video).
-    step_hook(sim, mission) is called after every control step (used by the live viewer)."""
+def robot_obstacle_contacts(sim: TB3Sim) -> list:
+    """Names of the geoms the robot touches, other than the floor (an empty list means no clash)."""
+    m, d = sim.model, sim.data
+    robot = {sim._foot} | {b for b in range(m.nbody) if m.body_parentid[b] == sim._foot}  # noqa: SLF001
+    out = []
+    for i in range(d.ncon):
+        g1, g2 = d.contact[i].geom1, d.contact[i].geom2
+        for a, b in ((g1, g2), (g2, g1)):
+            if m.geom_bodyid[a] in robot and m.geom_bodyid[b] not in robot:
+                name = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_GEOM, b)
+                if name != "floor":
+                    out.append(name)
+    return out
+
+
+def run_episode(cfg: EpisodeConfig, frame_hook=None, step_hook: Optional[Callable] = None) -> EpisodeResult:
+    """frame_hook(k, image, mission, log) is called every control step (video, photos, monitor); a list of hooks is
+    allowed. step_hook(sim, mission) is called after every control step (used by the live viewer)."""
+    hooks = [] if frame_hook is None else (list(frame_hook) if isinstance(frame_hook, (list, tuple)) else [frame_hook])
     rng = np.random.default_rng(cfg.seed)
-    nominal = km.ALL_START_POSES[cfg.start].copy()
+    nominal = (km.ALL_START_POSES[cfg.start] if cfg.layout is None else cfg.layout.start).copy()
     offset = rng.normal(0.0, km.START_PRIOR_SIGMA) if cfg.start_offset is None else np.asarray(cfg.start_offset)
-    sim = TB3Sim(ROOM_XML, seed=cfg.seed, odom_noise=cfg.odom_noise, odom_radius_scale=cfg.wheel_scale)
+    sim_kw = dict(seed=cfg.seed, odom_noise=cfg.odom_noise, odom_radius_scale=cfg.wheel_scale)
+    if cfg.layout is None:
+        sim = TB3Sim(ROOM_XML, **sim_kw)
+    else:
+        from src.tb3.scene import load_room_sim
+        sim = load_room_sim(cfg.layout, **sim_kw)
     _apply_conditions(sim, cfg)
     sim.reset(nominal + offset)
+    # Physical clash check: after placing the robot, MuJoCo must report no contact with any obstacle or wall.
+    clashes = robot_obstacle_contacts(sim)
+    if clashes:
+        raise RuntimeError(f"robot placed in contact with {clashes}")
     cam = SimCamera(sim)
     Ts = sim.ctrl_dt
 
@@ -116,7 +141,7 @@ def run_episode(cfg: EpisodeConfig, frame_hook: Optional[Callable] = None,
         from src.planning.lidar_map import LidarMapper
         mapper = LidarMapper(sim.sensor_extrinsics()["lidar"])
     mission = DockingMission(ekf, sensor, tracker, MissionConfig(Ts=Ts, planner=cfg.planner, timeout=cfg.timeout),
-                             slew=SlewRateLimiter() if cfg.slew else None, lidar_mapper=mapper)
+                             slew=SlewRateLimiter() if cfg.slew else None, lidar_mapper=mapper, layout=cfg.layout)
 
     keys = ["t", "phase", "x", "y", "th", "xh", "yh", "thh", "Pxx", "Pxy", "Pyy", "Pxt", "Pyt", "Ptt", "v_cmd", "w_cmd",
             "v_odom", "w_odom", "xr", "yr", "thr", "detected", "accepted", "nis", "zx", "zy", "zyaw", "z_range",
@@ -152,8 +177,8 @@ def run_episode(cfg: EpisodeConfig, frame_hook: Optional[Callable] = None,
                    syaw=np.sqrt(meas.R[2, 2]) if meas is not None else np.nan, frame_lost=int(lost))
         for kk in keys:
             log[kk].append(row[kk])
-        if frame_hook is not None:
-            frame_hook(k, image, mission, log)
+        for hook in hooks:
+            hook(k, image, mission, log)
         if mission.phase in (Phase.DONE, Phase.FAILED):
             # Let the robot come to rest, then log the final state.
             for _ in range(10):
@@ -178,6 +203,7 @@ def run_episode(cfg: EpisodeConfig, frame_hook: Optional[Callable] = None,
     out = {k: np.array(v) if k != "phase" else np.array(v, dtype=object) for k, v in log.items()}
     out["final_true"] = final
     out["start_true"] = nominal + offset
+    out["start_prior"] = nominal
     out["ekf_updates"] = mission.ekf.updates
     out["reinit_events"] = mission.ekf.reinit_events
     return EpisodeResult(cfg, out, mission.events, mission.plans, bool(ok), status, fe, fe_est,

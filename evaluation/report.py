@@ -119,7 +119,7 @@ def plot_episode(res, out_dir: Path, title: str = "") -> None:
 
     # 1. Paths on the map.
     fig, ax = plt.subplots(figsize=(8, 6.2))
-    draw_map(ax)
+    draw_map(ax, layout=res.cfg.layout)
     for _, plan in res.plans:
         ax.plot(plan.ref.x, plan.ref.y, color="0.6", lw=1, ls="--")
     ax.plot(L["x"], L["y"], "b", lw=1.6, label="true path")

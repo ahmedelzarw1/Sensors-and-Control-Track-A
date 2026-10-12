@@ -18,6 +18,13 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg  # noqa: E402
 from evaluation.plotting import draw_map, ellipse_points  # noqa: E402
 from src import known_map as km  # noqa: E402
 
+# drawFrameAxes warns when an axis tip falls outside the image (normal when docked close to the marker); the warning
+# does not affect the drawing of the visible part, so only errors are logged.
+try:
+    cv2.utils.logging.setLogLevel(cv2.utils.logging.LOG_LEVEL_ERROR)
+except AttributeError:
+    pass
+
 W, H = 640, 480
 
 
@@ -29,14 +36,14 @@ def _tri(pose, size=0.12):
 
 
 class DemoVideo:
-    def __init__(self, path: Path, fps: int = 10, title: str = ""):
+    def __init__(self, path: Path, fps: int = 10, title: str = "", layout=None):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.writer = imageio.get_writer(str(self.path), fps=fps, codec="libx264", quality=7, macro_block_size=8)
         self.fig = plt.figure(figsize=(W / 100, H / 100), dpi=100)
         self.canvas = FigureCanvasAgg(self.fig)
         self.ax = self.fig.add_axes([0.10, 0.11, 0.88, 0.82])
-        draw_map(self.ax)
+        draw_map(self.ax, layout=layout)
         self.ax.set_title(title, fontsize=9)
         self.ref_line, = self.ax.plot([], [], color="0.55", lw=1, ls="--", label="planned reference")
         self.true_line, = self.ax.plot([], [], "b", lw=1.5, label="true path")
@@ -75,25 +82,29 @@ class DemoVideo:
         self.writer.append_data(np.hstack([left, right]))
 
     def _camera_panel(self, image, mission):
-        img = np.ascontiguousarray(image[:, :, ::-1])  # OpenCV draws in BGR order
-        if img.shape[:2] != (H, W):
-            img = cv2.resize(img, (W, H))
-        det = mission.sensor.last_detection
-        if det is not None:
-            pts = det.corners.astype(np.int32).reshape(-1, 1, 2)
-            cv2.polylines(img, [pts], True, (0, 255, 0), 2)
-            rvec, _ = cv2.Rodrigues(det.R_cam_marker)
-            cv2.drawFrameAxes(img, mission.sensor.detector.K, mission.sensor.detector.dist, rvec,
-                              det.t_cam_marker.reshape(3, 1), 0.07, 2)
-            pm = mission.sensor.last_planar
-            cv2.putText(img, f"id {det.marker_id}  range {pm.range:.2f} m  view {np.rad2deg(pm.view_angle):.0f} deg",
-                        (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-        else:
-            cv2.putText(img, "no marker detected", (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (80, 80, 255), 2)
-        cv2.putText(img, "robot camera (axes: x red, y green, z blue)", (10, H - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                    (255, 255, 255), 1)
-        return np.ascontiguousarray(img[:, :, ::-1])
+        return annotate_camera(image, mission)
 
     def close(self):
         self.writer.close()
         plt.close(self.fig)
+
+
+def annotate_camera(image, mission, caption: str = "robot camera (axes: x red, y green, z blue)"):
+    """The robot camera image with the detected marker outlined, its pose axes and the measured range drawn on it."""
+    img = np.ascontiguousarray(image[:, :, ::-1])  # OpenCV draws in BGR order
+    if img.shape[:2] != (H, W):
+        img = cv2.resize(img, (W, H))
+    det = mission.sensor.last_detection
+    if det is not None:
+        pts = det.corners.astype(np.int32).reshape(-1, 1, 2)
+        cv2.polylines(img, [pts], True, (0, 255, 0), 2)
+        rvec, _ = cv2.Rodrigues(det.R_cam_marker)
+        cv2.drawFrameAxes(img, mission.sensor.detector.K, mission.sensor.detector.dist, rvec,
+                          det.t_cam_marker.reshape(3, 1), 0.07, 2)
+        pm = mission.sensor.last_planar
+        cv2.putText(img, f"id {det.marker_id}  range {pm.range:.2f} m  view {np.rad2deg(pm.view_angle):.0f} deg",
+                    (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+    else:
+        cv2.putText(img, "no marker detected", (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (80, 80, 255), 2)
+    cv2.putText(img, caption, (10, H - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    return np.ascontiguousarray(img[:, :, ::-1])

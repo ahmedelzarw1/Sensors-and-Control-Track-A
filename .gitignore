@@ -6,3 +6,11 @@ __pycache__/
 # Generated results stay local, except the demo run shown in the README.
 results/*
 !results/demo/
+
+# Temporary scene files written while loading a random layout.
+models/.layout_*
+# One random-layout example and the random-layout summaries are kept (README).
+!results/random/
+results/random/*
+!results/random/seed_3/
+!results/random/summary_*.csv

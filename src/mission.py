@@ -70,13 +70,13 @@ class MissionConfig:
 
 class DockingMission:
     def __init__(self, ekf, marker_sensor, tracker: LQRTracker, cfg: MissionConfig = MissionConfig(),
-                 slew: Optional[SlewRateLimiter] = None, lidar_mapper=None):
+                 slew: Optional[SlewRateLimiter] = None, lidar_mapper=None, layout: Optional[km.Layout] = None):
         self.ekf, self.sensor, self.tracker, self.cfg = ekf, marker_sensor, tracker, cfg
         self.slew = slew
         if self.slew is not None:
             self.slew.reset()
         self.mapper = lidar_mapper
-        self.known_grid = known_map_grid()
+        self.known_grid = known_map_grid(layout=layout)  # the map the robot is given
         self.phase = Phase.LOCALISE if cfg.localise_fixes > 0 else Phase.PLAN
         self.n_fixes = 0
         self.ref: Optional[ReferenceTrajectory] = None

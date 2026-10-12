@@ -36,3 +36,15 @@ def nees(true_poses: np.ndarray, x_hat: np.ndarray, P: np.ndarray) -> np.ndarray
     err = true_poses - x_hat
     err[:, 2] = wrap(err[:, 2])
     return np.array([float(e @ np.linalg.solve(Pk, e)) for e, Pk in zip(err, P)])
+
+
+def wilson_interval(successes: int, n: int, z: float = 1.959964) -> tuple[float, float]:
+    """95 percent Wilson score interval for a success rate (better than the normal approximation for small n or
+    rates near 0 or 1)."""
+    if n == 0:
+        return 0.0, 1.0
+    p = successes / n
+    den = 1 + z * z / n
+    centre = (p + z * z / (2 * n)) / den
+    half = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / den
+    return float(centre - half), float(centre + half)

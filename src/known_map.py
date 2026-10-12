@@ -12,7 +12,8 @@ Every number below is a design choice of the team (an assumption about the room)
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Optional
 
 import numpy as np
 
@@ -26,13 +27,18 @@ WALL_HEIGHT = 0.35  # above the LiDAR plane (0.182 m) and the camera (0.110 m)
 
 @dataclass(frozen=True)
 class Box:
-    """Axis-aligned box obstacle (planar footprint plus height)."""
+    """Box obstacle (planar footprint plus height), rotated by yaw about the vertical axis."""
     name: str
     x: float
     y: float
-    hx: float  # half size along x
-    hy: float  # half size along y
+    hx: float  # half size along the box's own x axis
+    hy: float  # half size along the box's own y axis
     height: float
+    yaw: float = 0.0  # rad
+
+    @property
+    def bounding_radius(self) -> float:
+        return float(np.hypot(self.hx, self.hy))
 
 
 @dataclass(frozen=True)
@@ -42,6 +48,21 @@ class Cylinder:
     y: float
     radius: float
     height: float
+
+    @property
+    def bounding_radius(self) -> float:
+        return float(self.radius)
+
+
+def footprint_contains(ob, X, Y) -> np.ndarray:
+    """True where the planar points (X, Y) lie inside the obstacle footprint."""
+    X, Y = np.asarray(X, float), np.asarray(Y, float)
+    if isinstance(ob, Box):
+        c, s = np.cos(ob.yaw), np.sin(ob.yaw)
+        u = c * (X - ob.x) + s * (Y - ob.y)
+        v = -s * (X - ob.x) + c * (Y - ob.y)
+        return (np.abs(u) <= ob.hx) & (np.abs(v) <= ob.hy)
+    return np.hypot(X - ob.x, Y - ob.y) <= ob.radius
 
 
 OBSTACLES = (
@@ -117,28 +138,57 @@ ALL_START_POSES = {**START_POSES, **HIDDEN_START_POSES}
 START_PRIOR_SIGMA = np.array([0.05, 0.05, np.deg2rad(3.0)])
 
 
-def obstacle_footprints() -> list:
+# ------------------------------------------------------------------ layouts
+@dataclass(frozen=True)
+class Layout:
+    """One arrangement of the room: the obstacles and the start pad.
+
+    The walls, charging station and marker are the same in every layout. The obstacles are given to the robot as its
+    map; the start pad is given to it as the prior on its start pose (the true start is the pad plus a random
+    placement error, applied by the simulator). A layout is configuration, not ground truth.
+    """
+    obstacles: tuple
+    start: np.ndarray = field(default_factory=lambda: START_POSES["centre"].copy())
+    name: str = "default"
+    seed: Optional[int] = None
+
+    def to_dict(self) -> dict:
+        obs = []
+        for ob in self.obstacles:
+            d = {"name": ob.name, "x": ob.x, "y": ob.y, "height": ob.height}
+            if isinstance(ob, Box):
+                d.update(type="box", hx=ob.hx, hy=ob.hy, yaw=ob.yaw)
+            else:
+                d.update(type="cylinder", radius=ob.radius)
+            obs.append(d)
+        return {"name": self.name, "seed": self.seed, "start": [float(v) for v in self.start], "obstacles": obs}
+
+
+def default_layout(start: str = "centre") -> Layout:
+    """The fixed room used for the demo, with one of the named start pads."""
+    return Layout(OBSTACLES, ALL_START_POSES[start].copy(), name=f"default/{start}")
+
+
+def station_footprint() -> Box:
+    return Box("charging_station", ROOM_X_MAX - STATION_DEPTH / 2, DOCK_Y, STATION_DEPTH / 2,
+               STATION_HALF_WIDTH, STATION_HEIGHT)
+
+
+def obstacle_footprints(layout: Optional[Layout] = None) -> list:
     """All static obstacles in the room as Box and Cylinder footprints, including the charging station."""
-    station = Box("charging_station", ROOM_X_MAX - STATION_DEPTH / 2, DOCK_Y, STATION_DEPTH / 2,
-                  STATION_HALF_WIDTH, STATION_HEIGHT)
-    return list(OBSTACLES) + [station]
+    obstacles = OBSTACLES if layout is None else layout.obstacles
+    return list(obstacles) + [station_footprint()]
 
 
-def segment_hits_obstacle(a, b, n: int = 200) -> bool:
+def segment_hits_obstacle(a, b, n: int = 200, layout: Optional[Layout] = None) -> bool:
     """True if the straight segment a-b (planar) crosses any obstacle footprint or the charging station body.
     All obstacles are taller than the camera, so this is also the camera line-of-sight test on the known map."""
     t = np.linspace(0.0, 1.0, n)[:, None]
     P = np.asarray(a, float)[:2] * (1 - t) + np.asarray(b, float)[:2] * t
-    for ob in obstacle_footprints():
-        if isinstance(ob, Box):
-            if np.any((np.abs(P[:, 0] - ob.x) <= ob.hx) & (np.abs(P[:, 1] - ob.y) <= ob.hy)):
-                return True
-        elif np.any(np.hypot(P[:, 0] - ob.x, P[:, 1] - ob.y) <= ob.radius):
-            return True
-    return False
+    return any(np.any(footprint_contains(ob, P[:, 0], P[:, 1])) for ob in obstacle_footprints(layout))
 
 
-def marker_line_of_sight(xy) -> bool:
+def marker_line_of_sight(xy, layout: Optional[Layout] = None) -> bool:
     """True if the marker centre is visible from xy on the known map (in front of the marker and not occluded).
     The end point is moved 1 cm in front of the marker face so the station body itself does not count."""
     mx, my, myaw = MARKER_POSE_W
@@ -146,4 +196,4 @@ def marker_line_of_sight(xy) -> bool:
     front = np.array([mx, my]) + 0.01 * n
     if (np.asarray(xy, float)[:2] - front) @ n <= 0.0:
         return False
-    return not segment_hits_obstacle(xy, front)
+    return not segment_hits_obstacle(xy, front, layout=layout)

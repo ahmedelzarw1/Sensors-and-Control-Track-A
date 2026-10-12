@@ -7,14 +7,17 @@ import numpy as np
 from src import known_map as km
 
 
-def draw_map(ax, show_dock: bool = True) -> None:
-    """Room walls, obstacles, charging station, marker and dock pose, in world coordinates."""
+def draw_map(ax, show_dock: bool = True, layout=None) -> None:
+    """Room walls, obstacles (of the given layout, default the fixed room), charging station, marker and dock pose."""
     ax.add_patch(mpatches.Rectangle((km.ROOM_X_MIN, km.ROOM_Y_MIN), km.ROOM_X_MAX - km.ROOM_X_MIN,
                                     km.ROOM_Y_MAX - km.ROOM_Y_MIN, fill=False, lw=2.0, ec="0.2"))
-    for ob in km.obstacle_footprints():
+    for ob in km.obstacle_footprints(layout):
         if isinstance(ob, km.Box):
             fc = "0.25" if ob.name == "charging_station" else "#d9875a"
-            ax.add_patch(mpatches.Rectangle((ob.x - ob.hx, ob.y - ob.hy), 2 * ob.hx, 2 * ob.hy, fc=fc, ec="none"))
+            c, s = np.cos(ob.yaw), np.sin(ob.yaw)
+            corners = np.array([[-ob.hx, -ob.hy], [ob.hx, -ob.hy], [ob.hx, ob.hy], [-ob.hx, ob.hy]])
+            pts = corners @ np.array([[c, s], [-s, c]]) + [ob.x, ob.y]
+            ax.add_patch(mpatches.Polygon(pts, closed=True, fc=fc, ec="none"))
         else:
             ax.add_patch(mpatches.Circle((ob.x, ob.y), ob.radius, fc="#5a8cd9", ec="none"))
     mx, my, myaw = km.MARKER_POSE_W

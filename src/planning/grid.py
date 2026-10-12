@@ -60,15 +60,12 @@ def empty_room_grid(res: float = 0.05, pad: float = 0.0) -> Grid:
     return g
 
 
-def known_map_grid(res: float = 0.05) -> Grid:
-    """Rasterise the known map: walls, obstacles and the charging station."""
+def known_map_grid(res: float = 0.05, layout: "km.Layout | None" = None) -> Grid:
+    """Rasterise the known map: walls, obstacles (of the given layout, default the fixed room) and the station."""
     g = empty_room_grid(res)
     X, Y = g.centres()
-    for ob in km.obstacle_footprints():
-        if isinstance(ob, km.Box):
-            g.occ |= (np.abs(X - ob.x) <= ob.hx) & (np.abs(Y - ob.y) <= ob.hy)
-        else:
-            g.occ |= np.hypot(X - ob.x, Y - ob.y) <= ob.radius
+    for ob in km.obstacle_footprints(layout):
+        g.occ |= km.footprint_contains(ob, X, Y)
     return g
 
 
