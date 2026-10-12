@@ -3,3 +3,5 @@ scipy
 matplotlib
 mujoco
 pytest
+opencv-contrib-python-headless
+imageio[ffmpeg]
