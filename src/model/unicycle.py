@@ -1,6 +1,6 @@
 """Differential-drive (unicycle) model, tracking-error model and structural analysis.
 
-State x = [x, y, theta] (pose of base_footprint in W). Input u = [v, omega].
+State x = [x, y, theta] (pose of the base frame B in W). Input u = [v, omega].
 Full derivation and assumptions: docs/model_derivation.md.
 
 Tracking error, expressed in the robot frame (Kanayama form):

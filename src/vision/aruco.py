@@ -65,7 +65,7 @@ class Detection:
 class PlanarMarker:
     """Marker pose in B with the quantities the noise model needs."""
     base_T_marker: np.ndarray  # (x, y, yaw) of M in B
-    range: float               # planar distance from base_footprint to the marker centre, m
+    range: float               # planar distance from the base frame origin to the marker centre, m
     bearing: float             # direction of the marker centre in B, rad
     view_angle: float          # angle between the marker normal and the line from the marker to the robot, rad
 

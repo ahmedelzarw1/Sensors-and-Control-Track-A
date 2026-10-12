@@ -3,7 +3,7 @@
 Baseline written for the EKF teammate to take over. Implements the Estimator protocol in src/tb3/interfaces.py.
 Plain-language walk-through: docs/estimation.md.
 
-State   x = [x, y, theta], the pose of base_footprint in W.
+State   x = [x, y, theta], the pose of the base frame B in W.
 Predict x+ = f(x, u_odom)            (exact unicycle over one period, src/model/unicycle.py)
         P+ = F P F^T + G Qu G^T + Qa
         F = df/dx, G = df/du. Qu = diag(sigma_v^2, sigma_omega^2) is the odometry noise. Qa is extra noise per step

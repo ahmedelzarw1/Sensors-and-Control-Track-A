@@ -24,7 +24,7 @@ from src.docking.docking import DockTolerance, dock_frame_error
 from src.estimation.ekf import EKFParams, MarkerEKF
 from src.mission import DockingMission, MissionConfig, Phase
 from src.tb3.camera import SimCamera
-from src.tb3.platform import ROOM_XML, OdomNoise, TB3Sim
+from src.tb3.platform import ROOM_XML, OdomNoise, TB3Sim, wheel_collision_geom
 from src.vision.aruco import MarkerSensor
 from src.vision.noise_model import MarkerNoiseModel
 
@@ -43,7 +43,7 @@ class EpisodeConfig:
     omega_max: float = 1.2
     slew: bool = True
     planner: str = "known_map"
-    wheel_scale: tuple = (1.0, 1.0)             # true wheel radius / nominal radius (left, right)
+    wheel_scale: tuple = (1.0, 1.0)             # true wheel radius / radius the software believes (left, right)
     friction_scale: float = 1.0                 # multiplies the sliding friction of the wheels and the floor
     impulses: tuple = ()                        # ((t, dv_forward m/s, dw rad/s), ...) applied to the true body
     marker_dropout: float = 0.0                 # probability that a camera frame is lost
@@ -70,19 +70,15 @@ class EpisodeResult:
 def _apply_conditions(sim: TB3Sim, cfg: EpisodeConfig) -> None:
     m = sim.model
     # Wheel radius mismatch: the true geometry changes, the odometry keeps the nominal radius read at construction.
-    for name, scale in zip(("wheel_left_link", "wheel_right_link"), cfg.wheel_scale):
-        b = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, name)
-        g = int(np.flatnonzero(m.geom_bodyid == b)[0])
-        m.geom_size[g][0] *= scale
-        m.body_pos[b][2] = m.body_pos[b][2] - 0.033 + m.geom_size[g][0]  # keep the axle at the wheel radius
+    # The wheel radius mismatch is applied through TB3Sim(odom_radius_scale=...): the tyres are meshes, so the true
+    # radius stays as modelled and the robot's software is given a wrong radius instead. The effect on odometry and
+    # wheel commands is the same.
     if cfg.friction_scale != 1.0:
-        for name in ("ground",):
-            g = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, name)
-            m.geom_friction[g][0] *= cfg.friction_scale
-        for name in ("wheel_left_link", "wheel_right_link"):
+        g = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "floor")
+        m.geom_friction[g][0] *= cfg.friction_scale
+        for name in ("wheel_left", "wheel_right"):
             b = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, name)
-            g = int(np.flatnonzero(m.geom_bodyid == b)[0])
-            m.geom_friction[g][0] *= cfg.friction_scale
+            m.geom_friction[wheel_collision_geom(m, b)][0] *= cfg.friction_scale
 
 
 def _apply_impulse(sim: TB3Sim, dv: float, dw: float) -> None:
@@ -101,7 +97,7 @@ def run_episode(cfg: EpisodeConfig, frame_hook: Optional[Callable] = None,
     rng = np.random.default_rng(cfg.seed)
     nominal = km.ALL_START_POSES[cfg.start].copy()
     offset = rng.normal(0.0, km.START_PRIOR_SIGMA) if cfg.start_offset is None else np.asarray(cfg.start_offset)
-    sim = TB3Sim(ROOM_XML, seed=cfg.seed, odom_noise=cfg.odom_noise)
+    sim = TB3Sim(ROOM_XML, seed=cfg.seed, odom_noise=cfg.odom_noise, odom_radius_scale=cfg.wheel_scale)
     _apply_conditions(sim, cfg)
     sim.reset(nominal + offset)
     cam = SimCamera(sim)

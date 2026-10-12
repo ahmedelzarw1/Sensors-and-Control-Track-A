@@ -6,8 +6,9 @@ the docking logic and the controller can be developed independently.
 Conventions (see INTERFACES.md and docs/frames.md)
 - SI units. Angles in radians, wrapped to [-pi, pi).
 - World frame W: MuJoCo world frame, z up. Planar pose is (x, y, theta) of the
-  robot base_footprint in W, theta is yaw about +z, counter-clockwise positive.
-- Body frame B: base_footprint, x forward, y left, z up.
+  robot base frame B in W, theta is yaw about +z, counter-clockwise positive.
+- Body frame B: body "base" of the ROBOTIS model, origin on the ground below the wheel axle centre,
+  x forward, y left, z up.
 - Commands are body velocities: v (m/s, forward) and omega (rad/s, CCW positive).
 """
 from __future__ import annotations

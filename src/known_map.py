@@ -72,7 +72,7 @@ MARKER_POSE_W = np.array([STATION_FRONT_X - MARKER_PLATE_THICKNESS, DOCK_Y, np.p
 MARKER_Z = MARKER_HEIGHT
 
 # ------------------------------------------------------------------ docking geometry
-# Distances are measured from the marker face to base_footprint along the marker normal.
+# Distances are measured from the marker face to the base frame origin along the marker normal.
 DOCK_STANDOFF = 0.25               # final docked distance (camera is then about 0.19 m from the marker)
 PRE_DOCK_DISTANCE = 0.90           # where the planner hands over to the docking trajectory
 
@@ -89,10 +89,10 @@ DOCK_POSE = pose_in_front_of_marker(DOCK_STANDOFF)
 PRE_DOCK_POSE = pose_in_front_of_marker(PRE_DOCK_DISTANCE)
 
 # ------------------------------------------------------------------ robot footprint
-# Radius of the circle about base_footprint that encloses the robot's planar footprint. The extreme point is the
-# rear corner of the chassis box at (-0.102, +-0.070) m in B, so the radius is 0.124 m. Checked against the MJCF in
-# tests/test_scene.py.
-ROBOT_RADIUS = 0.125
+# Radius of the circle about the base frame origin that encloses the robot's planar footprint: the largest planar
+# distance of any collision mesh vertex of the ROBOTIS Burger (a rear corner of the chassis, at about (-0.095, -0.043) m
+# in B) is 0.1045 m. Recomputed from the model in tests/test_platform.py.
+ROBOT_RADIUS = 0.105
 
 # ------------------------------------------------------------------ start poses
 # Nominal start poses: the robot is placed by hand on a marked start pad. The pad position is known to the robot as a

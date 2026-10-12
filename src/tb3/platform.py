@@ -1,5 +1,9 @@
 """MuJoCo TurtleBot3 Burger platform wrapper.
 
+The robot is the official ROBOTIS TurtleBot3 Burger model (third_party/robotis_mujoco_menagerie), patched by
+scripts/make_track_a_scene.py into models/tb3_burger.xml. The base frame B is the body "base", whose origin is on the
+ground below the centre of the wheel axle.
+
 What this module does
 - Loads the MJCF and reads the robot geometry from it (nothing is hard-coded).
 - Accepts body velocity commands (v, omega) and converts them to wheel speeds.
@@ -28,7 +32,7 @@ import numpy as np
 from .interfaces import ControlCmd, LidarScan, Observation, Odometry, wrap
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-THIRD_PARTY = REPO_ROOT / "third_party" / "hakoniwa-mujoco-robots"
+THIRD_PARTY = REPO_ROOT / "third_party" / "hakoniwa-mujoco-robots"   # LDS-01 specification only
 DEFAULT_XML = REPO_ROOT / "models" / "track_a_scene.xml"  # platform characterisation scene (open floor)
 ROOM_XML = REPO_ROOT / "models" / "track_a_room.xml"       # Track A room with obstacles, dock and marker
 LDS01_JSON = THIRD_PARTY / "config" / "sensors" / "lidar" / "lds-01.json"
@@ -43,15 +47,21 @@ class TB3Params:
 
     @classmethod
     def from_model(cls, m: mujoco.MjModel) -> "TB3Params":
-        bl = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, "wheel_left_link")
-        br = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, "wheel_right_link")
-        # The wheel geom is the single geom attached to each wheel body: size[0] is the radius.
-        gl = int(np.flatnonzero(m.geom_bodyid == bl)[0])
-        radius = float(m.geom_size[gl][0])
+        bl = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, "wheel_left")
+        br = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, "wheel_right")
+        # The tyre collision geom is the wheel geom that collides (the other one is visual only). It is a mesh, so the
+        # radius is read from its bounding box: the two largest half extents are the radius, the smallest is the width.
+        gl = wheel_collision_geom(m, bl)
+        radius = float(np.sort(m.geom_aabb[gl][3:])[-1])
         separation = float(abs(m.body_pos[bl][1] - m.body_pos[br][1]))
-        al = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_ACTUATOR, "left_motor")
+        al = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_ACTUATOR, "wheel_left")
         max_w = float(m.actuator_ctrlrange[al][1])
-        return cls(radius, separation, max_w)
+        return cls(round(radius, 4), separation, max_w)
+
+
+def wheel_collision_geom(m: mujoco.MjModel, wheel_body: int) -> int:
+    """The colliding geom of a wheel body."""
+    return int([g for g in np.flatnonzero(m.geom_bodyid == wheel_body) if m.geom_contype[g] or m.geom_conaffinity[g]][0])
 
 
 @dataclass(frozen=True)
@@ -103,9 +113,13 @@ class TB3Sim:
         odom_noise: OdomNoise = OdomNoise(),
         lidar_spec: Optional[LidarSpec] = None,
         lidar_noise: bool = True,
-        wheel_accel: Optional[float] = 30.0,
+        wheel_accel: Optional[float] = None,
+        odom_radius_scale: tuple = (1.0, 1.0),
     ):
         self.model = mujoco.MjModel.from_xml_path(str(xml_path))
+        # The robot's software believes the wheel radii are true_radius / scale. 1.0 means perfectly known radii;
+        # evaluation uses other values to simulate a wheel radius mismatch.
+        self.odom_radius_scale = np.asarray(odom_radius_scale, dtype=float)
         self.data = mujoco.MjData(self.model)
         self.params = TB3Params.from_model(self.model)
         self.ctrl_dt = float(ctrl_dt)
@@ -116,24 +130,21 @@ class TB3Sim:
         self.odom_noise = odom_noise
         self.lidar = lidar_spec if lidar_spec is not None else LidarSpec.from_json()
         self.lidar_noise = lidar_noise
-        # Limit on how fast the DIFFERENCE between the wheel speeds may change (rad/s^2), applied to the actuator
-        # setpoints at every physics substep; the common (forward) part changes as before. Why (docs/platform_notes.md):
-        # a step in the turning command kicks the body, so on an arc the true heading change was only 94 percent of
-        # the odometry value and at the end of a turn the body briefly yawed the wrong way. Ramping the turning part
-        # removes most of that. Ramping the forward part as well made the robot slide back further after a stop (a
-        # contact artefact of the simulator), so it is not ramped. 30 rad/s^2 is our ASSUMPTION, the gentlest value
-        # tested that removed the kick. None reproduces the original behaviour.
+        # Optional limit on how fast the DIFFERENCE between the wheel speeds may change (rad/s^2), applied to the
+        # actuator setpoints at every physics substep. It was needed with the earlier Hakoniwa model, whose body kicked
+        # after a step in the turning command. The patched ROBOTIS model shows no kick and the limit made no measurable
+        # difference (docs/platform_notes.md), so it is off by default (None).
         self.wheel_accel = wheel_accel
         self._rng = np.random.default_rng(seed)
 
         name2id = lambda typ, n: mujoco.mj_name2id(self.model, typ, n)
         B, J, A = mujoco.mjtObj.mjOBJ_BODY, mujoco.mjtObj.mjOBJ_JOINT, mujoco.mjtObj.mjOBJ_ACTUATOR
-        self._foot = name2id(B, "base_footprint")
-        self._link = name2id(B, "base_link")
-        self._scan = name2id(B, "base_scan")
-        self._act_l, self._act_r = name2id(A, "left_motor"), name2id(A, "right_motor")
-        self._qadr_l = int(self.model.jnt_qposadr[name2id(J, "wheel_left_joint")])
-        self._qadr_r = int(self.model.jnt_qposadr[name2id(J, "wheel_right_joint")])
+        # ROBOTIS model: body "base" has its origin on the ground below the wheel axle centre (frame B).
+        self._foot = name2id(B, "base")
+        self._scan = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, "base_scan")
+        self._act_l, self._act_r = name2id(A, "wheel_left"), name2id(A, "wheel_right")
+        self._qadr_l = int(self.model.jnt_qposadr[name2id(J, "wheel_left")])
+        self._qadr_r = int(self.model.jnt_qposadr[name2id(J, "wheel_right")])
         self._free_adr = int(self.model.jnt_qposadr[self.model.body_jntadr[self._foot]])
         self._lidar_angles = wrap(np.deg2rad(-180.0) + np.arange(self.lidar.n_beams) * (2 * np.pi / self.lidar.n_beams))
         self.reset()
@@ -151,11 +162,15 @@ class TB3Sim:
         self._lidar_acc = 0.0
         self._phi_prev = np.array([self.data.qpos[self._qadr_l], self.data.qpos[self._qadr_r]])
 
+    def _believed_radii(self) -> np.ndarray:
+        """Wheel radii (left, right) the robot's software uses for commands and odometry."""
+        return self.params.wheel_radius / self.odom_radius_scale
+
     def wheel_speeds(self, cmd: ControlCmd) -> np.ndarray:
         """Differential-drive inverse kinematics, clipped to the actuator range. Returns (w_left, w_right)."""
-        r, L, wmax = self.params.wheel_radius, self.params.wheel_separation, self.params.max_wheel_speed
-        w_r = (cmd.v + 0.5 * L * cmd.omega) / r
-        w_l = (cmd.v - 0.5 * L * cmd.omega) / r
+        (r_l, r_r), L, wmax = self._believed_radii(), self.params.wheel_separation, self.params.max_wheel_speed
+        w_r = (cmd.v + 0.5 * L * cmd.omega) / r_r
+        w_l = (cmd.v - 0.5 * L * cmd.omega) / r_l
         return np.clip([w_l, w_r], -wmax, wmax)
 
     def step(self, cmd: ControlCmd) -> Observation:
@@ -173,9 +188,9 @@ class TB3Sim:
         phi = np.array([self.data.qpos[self._qadr_l], self.data.qpos[self._qadr_r]])
         dphi = phi - self._phi_prev
         self._phi_prev = phi
-        r, L = self.params.wheel_radius, self.params.wheel_separation
-        v = r * (dphi[1] + dphi[0]) / (2.0 * self.ctrl_dt)
-        w = r * (dphi[1] - dphi[0]) / (L * self.ctrl_dt)
+        (r_l, r_r), L = self._believed_radii(), self.params.wheel_separation
+        v = (r_r * dphi[1] + r_l * dphi[0]) / (2.0 * self.ctrl_dt)
+        w = (r_r * dphi[1] - r_l * dphi[0]) / (L * self.ctrl_dt)
         v += self._rng.normal(0.0, self.odom_noise.sigma_v)
         w += self._rng.normal(0.0, self.odom_noise.sigma_omega)
         odom = Odometry(t=self.t, v=float(v), omega=float(w), dt=self.ctrl_dt)
@@ -189,18 +204,17 @@ class TB3Sim:
 
     # ------------------------------------------------------------------ sensors
     def _scan_lidar(self) -> LidarScan:
-        # In the original MJCF the caster has no collision geometry and the body rests pitched about
-        # 4 degrees nose-up on its rear edge (see docs/platform_notes.md). A real LDS-01 scans a level
-        # plane, so the beams are cast horizontally using the yaw of base_footprint only. This keeps
-        # the scan independent of any residual body tilt.
-        origin = self.data.xpos[self._scan].copy()
+        # Beams are cast horizontally from the LDS-01 origin (site base_scan) using the yaw of the base only, as the
+        # real sensor scans a plane. This keeps the scan independent of any small body tilt. The robot's own body is
+        # excluded so the beams do not hit the LiDAR housing they start inside.
+        origin = self.data.site_xpos[self._scan].copy()
         Rf = self.data.xmat[self._foot].reshape(3, 3)
         yaw = float(np.arctan2(Rf[1, 0], Rf[0, 0]))
         geomid = np.zeros(1, dtype=np.int32)
         ranges = np.full(self.lidar.n_beams, np.nan)
         for i, a in enumerate(self._lidar_angles):
             d = np.array([np.cos(yaw + a), np.sin(yaw + a), 0.0])
-            dist = mujoco.mj_ray(self.model, self.data, origin, d, None, 1, self._scan, geomid)
+            dist = mujoco.mj_ray(self.model, self.data, origin, d, None, 1, self._foot, geomid)
             if dist >= 0.0:
                 ranges[i] = dist
         valid = np.isfinite(ranges) & (ranges >= self.lidar.r_min) & (ranges <= self.lidar.r_max)
@@ -210,7 +224,7 @@ class TB3Sim:
         return LidarScan(t=self.t, angles=self._lidar_angles.copy(), ranges=ranges)
 
     def sensor_extrinsics(self) -> dict:
-        """Sensor poses in the base_footprint frame, computed from the model at the current state.
+        """Sensor poses in the base frame, computed from the model at the current state.
 
         Returns translation (3,) and rotation matrix (3,3) for the LiDAR origin and the colour camera.
         The MuJoCo camera looks along its own -z axis, with +x to the image right and +y up.
@@ -219,14 +233,15 @@ class TB3Sim:
         pb = self.data.xpos[self._foot]
         cam = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, "color_camera")
         out = {
-            "lidar": {"t": Rb.T @ (self.data.xpos[self._scan] - pb), "R": Rb.T @ self.data.xmat[self._scan].reshape(3, 3)},
+            "lidar": {"t": Rb.T @ (self.data.site_xpos[self._scan] - pb),
+                      "R": Rb.T @ self.data.site_xmat[self._scan].reshape(3, 3)},
             "camera": {"t": Rb.T @ (self.data.cam_xpos[cam] - pb), "R": Rb.T @ self.data.cam_xmat[cam].reshape(3, 3)},
         }
         return out
 
     # ------------------------------------------------------------ ground truth
     def _ground_truth_pose(self) -> np.ndarray:
-        """True planar pose (x, y, yaw) of base_footprint in W. Evaluation only. Never call from src/."""
+        """True planar pose (x, y, yaw) of base in W. Evaluation only. Never call from src/."""
         R = self.data.xmat[self._foot].reshape(3, 3)
         p = self.data.xpos[self._foot]
         return np.array([p[0], p[1], float(np.arctan2(R[1, 0], R[0, 0]))])
