@@ -17,16 +17,16 @@ import mujoco
 import numpy as np
 
 from experiments.true_position import true_pose
-from robot_code.room import room_map as km
-from robot_code.controller.lqr_controller import Limits, LQRTracker
-from robot_code.controller.smooth_commands import SlewRateLimiter
-from robot_code.docking.docking import DockTolerance, dock_frame_error
-from robot_code.localisation.kalman_filter import EKFParams, MarkerEKF
+from robot_code import room_map as km
+from robot_code.lqr_controller import Limits, LQRTracker
+from robot_code.lqr_controller import SlewRateLimiter
+from robot_code.docking import DockTolerance, dock_frame_error
+from robot_code.kalman_filter import EKFParams, MarkerEKF
 from robot_code.robot_brain import DockingMission, MissionConfig, Phase
-from robot_code.simulated_robot.camera import SimCamera
-from robot_code.simulated_robot.simulator import ROOM_XML, OdomNoise, TB3Sim, wheel_collision_geom
-from robot_code.vision.marker_detection import MarkerSensor
-from robot_code.vision.marker_noise import MarkerNoiseModel
+from robot_code.simulator import SimCamera
+from robot_code.simulator import ROOM_XML, OdomNoise, TB3Sim, wheel_collision_geom
+from robot_code.vision import MarkerSensor
+from robot_code.vision import MarkerNoiseModel
 
 
 @dataclass
@@ -116,7 +116,7 @@ def run_episode(cfg: EpisodeConfig, frame_hook=None, step_hook: Optional[Callabl
     if cfg.layout is None:
         sim = TB3Sim(ROOM_XML, **sim_kw)
     else:
-        from robot_code.simulated_robot.mujoco_room import load_room_sim
+        from robot_code.simulator import load_room_sim
         sim = load_room_sim(cfg.layout, **sim_kw)
     _apply_conditions(sim, cfg)
     sim.reset(nominal + offset)

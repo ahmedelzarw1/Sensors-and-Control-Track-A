@@ -92,21 +92,21 @@ Each folder's `__init__.py` lists what is inside it.
 
 | Question | File and function |
 |---|---|
-| How does the robot move (kinematics)? | `robot_code/movement_maths/unicycle_model.py`: `f_unicycle` |
-| How are (v, omega) turned into wheel speeds, and wheel encoders into odometry? | `robot_code/simulated_robot/simulator.py`: `wheel_speeds`, `step` |
-| Where is the physics simulated? | `robot_code/simulated_robot/simulator.py`: `step` (calls `mujoco.mj_step` 50 times per 0.1 s) |
-| State-space model, linearisation, discretisation | `robot_code/movement_maths/unicycle_model.py`: `tracking_error`, `linearise`, `zoh` |
-| Controllability and observability | `robot_code/movement_maths/unicycle_model.py`: `ctrb`, `observability_matrix_ltv`, `H_marker_pose`; checks in `tests/test_movement_maths.py` |
-| LQR (Q, R, gain) | `robot_code/controller/lqr_controller.py`: `bryson`, `dlqr`, `design_gain`, `LQRTracker.command` |
-| Open loop and closed loop | `robot_code/controller/lqr_controller.py`: `LQRTracker.command` (reference speeds plus feedback on the estimate) |
-| EKF predict and update | `robot_code/localisation/kalman_filter.py`: `MarkerEKF.predict`, `MarkerEKF.update_marker` |
-| Where do Q and R come from? | `experiments/calibration/` and the values in `settings/` |
-| Camera model and frames | `robot_code/vision/camera_maths.py`, `robot_code/vision/marker_detection.py`: `to_base_frame` |
-| Marker detection and pose | `robot_code/vision/marker_detection.py`: `ArucoDetector.detect`, `MarkerSensor.measure` |
-| Path around the obstacles | `robot_code/path_planning/astar_grid.py`: `astar`; `robot_code/path_planning/smooth_path.py`: `fillet_path`, `speed_profile` |
-| Docking and the stop rule | `robot_code/docking/docking.py`: `docking_reference`, `should_stop` |
+| How does the robot move (kinematics)? | `robot_code/unicycle_model.py`: `f_unicycle` |
+| How are (v, omega) turned into wheel speeds, and wheel encoders into odometry? | `robot_code/simulator.py`: `wheel_speeds`, `step` |
+| Where is the physics simulated? | `robot_code/simulator.py`: `step` (calls `mujoco.mj_step` 50 times per 0.1 s) |
+| State-space model, linearisation, discretisation | `robot_code/unicycle_model.py`: `tracking_error`, `linearise`, `zoh` |
+| Controllability and observability | `robot_code/unicycle_model.py`: `ctrb`, `observability_matrix_ltv`, `H_marker_pose`; checks in `tests/test_movement_maths.py` |
+| LQR (Q, R, gain) | `robot_code/lqr_controller.py`: `bryson`, `dlqr`, `design_gain`, `LQRTracker.command` |
+| Open loop and closed loop | `robot_code/lqr_controller.py`: `LQRTracker.command` (reference speeds plus feedback on the estimate) |
+| EKF predict and update | `robot_code/kalman_filter.py`: `MarkerEKF.predict`, `MarkerEKF.update_marker` |
+| Where do Q and R come from? | `experiments/` and the values in `settings/` |
+| Camera model and frames | `robot_code/vision.py`, `robot_code/vision.py`: `to_base_frame` |
+| Marker detection and pose | `robot_code/vision.py`: `ArucoDetector.detect`, `MarkerSensor.measure` |
+| Path around the obstacles | `robot_code/path_planning.py`: `astar`; `robot_code/path_planning.py`: `fillet_path`, `speed_profile` |
+| Docking and the stop rule | `robot_code/docking.py`: `docking_reference`, `should_stop` |
 | What does the robot do in each phase? | `robot_code/robot_brain.py`: `DockingMission.step`, `_decide` |
-| Random rooms and the no-clash rules | `robot_code/room/random_room.py`: `sample_layout` |
+| Random rooms and the no-clash rules | `robot_code/random_room.py`: `sample_layout` |
 | How is the true position kept away from the robot? | `experiments/true_position.py`; enforced by `tests/test_robot_never_sees_truth.py` |
 
 ## How the system works
@@ -217,9 +217,9 @@ discretised exactly by zero-order hold (matrix exponential). Both are checked ag
 ### Camera and frames
 
 640 x 480 pixels, vertical field of view 60 degrees, no distortion, so the intrinsics follow exactly:
-`fx = fy = (480 / 2) / tan(30 deg) = 415.7 px`, `cx = 319.5`, `cy = 239.5` (`robot_code/vision/camera_maths.py`).
+`fx = fy = (480 / 2) / tan(30 deg) = 415.7 px`, `cx = 319.5`, `cy = 239.5` (`robot_code/vision.py`).
 
-Chain from image to measurement (`robot_code/vision/marker_detection.py`):
+Chain from image to measurement (`robot_code/vision.py`):
 
 1. ArUco detection (DICT_4X4_50, id 0, 0.15 m marker) with sub-pixel corners.
 2. `solvePnP` with `SOLVEPNP_IPPE_SQUARE`: marker pose in the OpenCV camera frame (x right, y down, z forward).
@@ -230,7 +230,7 @@ Chain from image to measurement (`robot_code/vision/marker_detection.py`):
 A square marker seen from far away has two poses that fit almost equally well. When the second solution's reprojection
 error is within 3 times the first, both are passed on and the EKF uses the one closer to its prediction.
 
-### Marker calibration (`experiments/calibration/calibrate_camera.py`)
+### Marker calibration (`experiments/calibrate_camera.py`)
 
 The robot is placed at about 2600 random poses (distance 0.18 to 3.6 m, viewing angle up to 75 degrees) in one sweep and
 the measured marker pose is compared with the truth. The measured distance was biased long, growing with distance, as if
@@ -264,7 +264,7 @@ with floors of 5 mm and 0.5 degrees (an assumption for effects a noise-free rend
 **In motion** (`camera_noise_while_driving.py`, 15 docking runs, 2498 measurements) the yaw error is 2.25 times the
 static model (the body rocks while driving); position stays within it. The yaw standard deviation is multiplied by 2.25.
 
-### Odometry calibration (`experiments/calibration/calibrate_wheels.py`)
+### Odometry calibration (`experiments/calibrate_wheels.py`)
 
 28 manoeuvres (straight lines, arcs of both signs, turns in place) compared with the truth. Uncalibrated, the true heading
 change was 0.969 to 1.001 of the odometry value and the true distance 0.994 to 1.007. Fitted scales:
@@ -281,7 +281,7 @@ used for navigation (see Known limitations).
 
 ## 3. Estimation
 
-`robot_code/localisation/kalman_filter.py`, state `x = [x, y, theta]`.
+`robot_code/kalman_filter.py`, state `x = [x, y, theta]`.
 
 ```
 predict:  x+ = f(x, u_odom)                      (calibrated odometry, exact unicycle)
@@ -320,7 +320,7 @@ table: `results/calibration/kalman_filter_tuning.json`.
 
 ## 4. Control, planning and docking
 
-### LQR tracker (`robot_code/controller/lqr_controller.py`)
+### LQR tracker (`robot_code/lqr_controller.py`)
 
 Command = reference speeds (feedforward, open loop) + LQR feedback on the estimated tracking error (closed loop),
 `u = u_ref - K e`. Weights by Bryson's rule, from the largest acceptable errors (5 cm, 5 cm, 5 degrees) and corrections
@@ -337,7 +337,7 @@ controllable at standstill.
 All eigenvalues are inside the unit circle. Limits: 0.22 m/s (the ROBOTIS wheel limit, 6.67 rad/s x 0.033 m) and
 2.75 rad/s (the fastest turn the wheel limit allows). The slew limiter caps changes at 0.5 m/s^2 and 3 rad/s^2.
 
-### Path planning (`robot_code/path_planning/`)
+### Path planning (`robot_code/path_planning.py `)
 
 A* on a 5 cm grid of the known map, obstacles inflated by the robot radius plus a margin (0.105 + 0.075 m). The path is
 shortened by line-of-sight shortcuts, corners are replaced by circular arcs (exactly drivable by a differential-drive
@@ -345,7 +345,7 @@ robot), and a speed profile (0.15 m/s cruise, 0.8 rad/s on arcs, 0.15 m/s^2) tur
 integrated with the unicycle model so the pose and speed columns agree. The path starts with a short straight along the
 current heading, because turning in place gives the largest odometry heading error on this platform.
 
-### Docking (`robot_code/docking/docking.py`)
+### Docking (`robot_code/docking.py`)
 
 From the estimated pose, a cubic Bezier curve joins the marker's centre line 0.30 m before the dock, then a straight
 approach at 0.06 m/s to the dock pose (0.25 m in front of the marker face) and beyond. The reference never slows to zero
@@ -368,7 +368,7 @@ approach at 0.06 m/s to the dock pose (0.25 m in front of the marker face) and b
 ![Path of the centre run](results/demo/centre/path.png)
 ![Control commands](results/demo/centre/control.png)
 
-### Random rooms (`robot_code/room/random_room.py`)
+### Random rooms (`robot_code/random_room.py`)
 
 Each seed draws 3 to 5 obstacles (rotated boxes and cylinders, random sizes and positions) and a random start pad and
 heading. A room is redrawn until every rule holds:
@@ -460,10 +460,10 @@ Estimation error against distance driven since the last marker fix, pooled over 
 
 ```
 python commands/build_mujoco_files.py                                   # mujoco_files/ from the ROBOTIS model
-python -m experiments.calibration.calibrate_camera                      # settings/camera_noise.json (about 8 min)
-python -m experiments.calibration.camera_noise_while_driving            # in-motion factor
-python -m experiments.calibration.calibrate_wheels                      # settings/wheel_calibration.json
-python -m experiments.calibration.tune_kalman_filter                    # settings/kalman_filter_tuning.json
+python -m experiments.calibrate_camera                      # settings/camera_noise.json (about 8 min)
+python -m experiments.camera_noise_while_driving            # in-motion factor
+python -m experiments.calibrate_wheels                      # settings/wheel_calibration.json
+python -m experiments.tune_kalman_filter                    # settings/kalman_filter_tuning.json
 python commands/run_demo.py --hidden --video-all                        # results/demo/
 python commands/run_random_rooms.py --seed 100 --count 30 --quiet --no-video --no-photos
 python commands/run_random_rooms.py --seed 200 --count 30 --quiet --no-video --no-photos --allow-hidden
@@ -476,9 +476,9 @@ Every run is seeded, so the same commands give the same results.
 
 | Member | Responsible for |
 |---|---|
-| Ahmed El Zarw | State-space model and LQR controller (`robot_code/movement_maths/`, `robot_code/controller/`) |
-| Jeremy | EKF fusing wheel odometry with the ArUco camera measurements (`robot_code/localisation/`). Fusing a LiDAR pose estimate as well is planned and not yet implemented. |
-| Janith | ArUco detection and docking logic (`robot_code/vision/`, `robot_code/docking/`) |
+| Ahmed El Zarw | State-space model and LQR controller (`robot_code/unicycle_model.py `, `robot_code/lqr_controller.py `) |
+| Jeremy | EKF fusing wheel odometry with the ArUco camera measurements (`robot_code/kalman_filter.py `). Fusing a LiDAR pose estimate as well is planned and not yet implemented. |
+| Janith | ArUco detection and docking logic (`robot_code/vision/`, `robot_code/docking.py `) |
 
 As a team we:
 

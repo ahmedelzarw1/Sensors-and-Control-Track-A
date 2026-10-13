@@ -3,8 +3,8 @@
 macOS:  ~/.venvs/track-a/bin/mjpython commands/watch_live.py --start centre
 Linux:  python commands/watch_live.py --start centre
 
-Options: --start <pad> (see robot_code/room/room_map.py), --seed N, --speed 2.0 (faster than real time),
-         --random [SEED] (a random layout, see robot_code/room/random_room.py; without SEED a new one is drawn),
+Options: --start <pad> (see robot_code/room_map.py), --seed N, --speed 2.0 (faster than real time),
+         --random [SEED] (a random layout, see robot_code/random_room.py; without SEED a new one is drawn),
          --monitor (print what the robot calculates, serial-monitor style; always on with --random),
          --no-panel (hide the live video panel), --panel-size 0.5 (its width as a fraction of the window),
          --record (also save the video panel to results/live/<run>/demo.mp4).
@@ -28,11 +28,11 @@ import mujoco  # noqa: E402
 import mujoco.viewer  # noqa: E402
 import numpy as np  # noqa: E402
 
-from experiments.outputs.serial_monitor import SerialMonitor, print_layout  # noqa: E402
-from experiments.outputs.video import DemoVideo  # noqa: E402
+from experiments.serial_monitor import SerialMonitor, print_layout  # noqa: E402
+from experiments.video import DemoVideo  # noqa: E402
 from experiments.run_simulation import EpisodeConfig, run_episode  # noqa: E402
-from robot_code.room import room_map as km  # noqa: E402
-from robot_code.room import random_room as rl  # noqa: E402
+from robot_code import room_map as km  # noqa: E402
+from robot_code import random_room as rl  # noqa: E402
 
 
 def main() -> None:

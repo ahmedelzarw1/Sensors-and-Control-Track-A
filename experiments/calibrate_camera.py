@@ -1,7 +1,7 @@
 """Characterise the ArUco marker measurement against ground truth: range-bias calibration and the covariance R.
 
 Ground truth is used here only, to evaluate and calibrate the vision pipeline offline. The results are written to
-settings/camera_noise.json, which robot_code/vision/marker_noise.py and robot_code/vision/marker_detection.py read. The robot never sees ground
+settings/camera_noise.json, which robot_code/vision.py and robot_code/vision.py read. The robot never sees ground
 truth at run time. This is the simulated equivalent of calibrating a camera against a surveyed target.
 
 Method
@@ -20,8 +20,8 @@ Method
 - Yaw errors above 15 degrees are counted as planar pose ambiguity flips, reported separately and left out of the
   fit. The EKF rejects them with its chi-square gate.
 
-Run: python -m experiments.calibration.calibrate_camera            (both passes, about 8 minutes)
-     python -m experiments.calibration.calibrate_camera --fit-only (refit from the saved sweeps)
+Run: python -m experiments.calibrate_camera            (both passes, about 8 minutes)
+     python -m experiments.calibrate_camera --fit-only (refit from the saved sweeps)
 """
 from __future__ import annotations
 
@@ -38,14 +38,14 @@ import numpy as np  # noqa: E402
 from scipy.optimize import minimize  # noqa: E402
 
 from experiments.true_position import true_pose  # noqa: E402
-from robot_code.room import room_map as km  # noqa: E402
-from robot_code.simulated_robot.camera import SimCamera  # noqa: E402
+from robot_code import room_map as km  # noqa: E402
+from robot_code.simulator import SimCamera  # noqa: E402
 from robot_code.data_types import ControlCmd, wrap  # noqa: E402
-from robot_code.simulated_robot.simulator import ROOM_XML, OdomNoise, TB3Sim  # noqa: E402
-from robot_code.vision.marker_detection import ArucoDetector, to_base_frame  # noqa: E402
-from robot_code.vision.camera_maths import R_MJ_FROM_CV, horizontal_fov, intrinsics  # noqa: E402
+from robot_code.simulator import ROOM_XML, OdomNoise, TB3Sim  # noqa: E402
+from robot_code.vision import ArucoDetector, to_base_frame  # noqa: E402
+from robot_code.vision import R_MJ_FROM_CV, horizontal_fov, intrinsics  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "results" / "camera_calibration"
 NOISE_JSON = ROOT / "settings" / "camera_noise.json"
 OUTLIER_YAW = np.deg2rad(15.0)
@@ -274,7 +274,7 @@ def main(n: int = 4000, fit_only: bool = False) -> None:
 
     n_det = int(sum(r["detected"] for r in val_rows))
     summary = {
-        "source": f"experiments/calibration/calibrate_camera.py, pass 1 seed 0 ({len(cal_rows)} poses), "
+        "source": f"experiments/calibrate_camera.py, pass 1 seed 0 ({len(cal_rows)} poses), "
                   f"pass 2 seed 1 ({len(val_rows)} poses), obstacles removed",
         "range_bias_k_per_m": k,
         "range_bias_model": "r_true = r_meas - k r_meas^2 along the camera ray (fitted in pass 1)",

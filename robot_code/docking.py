@@ -2,13 +2,13 @@
 
 Baseline written for the vision and docking teammate to take over.
 
-Geometry (robot_code/room/room_map.py). The marker normal points into the room. The dock pose is DOCK_STANDOFF in front of the
+Geometry (robot_code/room_map.py). The marker normal points into the room. The dock pose is DOCK_STANDOFF in front of the
 marker face, facing the marker. The approach direction u is the dock heading.
 
 Reference. From the current ESTIMATED pose a cubic Bezier curve joins the marker normal line at a join point
 JOIN_DISTANCE in front of the dock, tangent to the normal, then a straight line runs to the dock and continues past
 it by EXTEND. The final straight is driven at V_DOCK. The reference never slows to zero: the tracking model is not
-controllable at zero reference speed (robot_code/movement_maths/unicycle_model.py, ctrb), so the motion is ended by the stop rule.
+controllable at zero reference speed (robot_code/unicycle_model.py, ctrb), so the motion is ended by the stop rule.
 
 Stop rule. Stop (command zero) when the ESTIMATED distance still to go along u, (p_dock - p_hat) . u, falls below
 half a control step of travel. Ground truth is not used.
@@ -22,8 +22,8 @@ from typing import Optional
 
 import numpy as np
 
-from robot_code.room import room_map as km
-from robot_code.path_planning.smooth_path import DensePath, ProfileLimits, reference_from_path, speed_profile
+from robot_code import room_map as km
+from robot_code.path_planning import DensePath, ProfileLimits, reference_from_path, speed_profile
 from robot_code.data_types import ControlCmd, ReferenceTrajectory, StateEstimate, wrap
 
 JOIN_DISTANCE = 0.30      # m before the dock, where the curve meets the normal line (assumption)

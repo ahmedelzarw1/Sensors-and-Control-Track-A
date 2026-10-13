@@ -1,6 +1,6 @@
 """In-motion check of the marker measurement noise, and the inflation of the static noise model.
 
-The static characterisation (experiments/calibration/calibrate_camera.py) places the robot at rest. In closed-loop runs the
+The static characterisation (experiments/calibrate_camera.py) places the robot at rest. In closed-loop runs the
 measurement errors are larger: the body pitches and rolls while it accelerates and turns, which tilts the camera. This
 script runs docking episodes, compares every marker measurement with the measurement the TRUE pose would give
 (h(x_true) with the known marker pose), and divides each error by the standard deviation the noise model predicted.
@@ -10,7 +10,7 @@ stored as "dynamic_inflation" in settings/camera_noise.json and multiplies the s
 Ambiguity flips (yaw error above 15 degrees) are excluded, as in the static fit; the EKF handles them separately.
 Ground truth is used here only.
 
-Run: python -m experiments.calibration.camera_noise_while_driving
+Run: python -m experiments.camera_noise_while_driving
 """
 from __future__ import annotations
 
@@ -23,12 +23,12 @@ from pathlib import Path
 import numpy as np
 
 from experiments.run_simulation import EpisodeConfig, run_episode
-from robot_code.room import room_map as km
-from robot_code.localisation.kalman_filter import EKFParams
+from robot_code import room_map as km
+from robot_code.kalman_filter import EKFParams
 from robot_code.data_types import wrap
-from robot_code.vision.marker_noise import NOISE_JSON
+from robot_code.vision import NOISE_JSON
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "results" / "camera_calibration"
 
 
@@ -80,7 +80,7 @@ def main(seeds=(11, 12, 13), workers: int = 6) -> None:
     cfg = json.loads(NOISE_JSON.read_text())
     cfg["dynamic_inflation"] = infl.tolist()
     n_ok = sum(st == "success" for st in statuses)
-    cfg["dynamic_source"] = (f"experiments/calibration/camera_noise_while_driving.py, {n_ok} of {len(jobs)} docking episodes successful and used, "
+    cfg["dynamic_source"] = (f"experiments/camera_noise_while_driving.py, {n_ok} of {len(jobs)} docking episodes successful and used, "
                              f"{int(ok.sum())} measurements ({int((~ok).sum())} ambiguity flips excluded)")
     NOISE_JSON.write_text(json.dumps(cfg, indent=2) + "\n")
     summary = {"dynamic_inflation": infl.tolist(), "normalised_std": Z.std(axis=0).tolist(),

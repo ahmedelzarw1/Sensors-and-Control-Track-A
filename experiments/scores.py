@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from robot_code.movement_maths.unicycle_model import tracking_error
+from robot_code.unicycle_model import tracking_error
 from robot_code.data_types import ReferenceTrajectory, wrap
 
 CHI2_3_95 = 7.815  # 95% point of chi-square with 3 degrees of freedom

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from robot_code.simulated_robot.simulator import TB3Sim
+from robot_code.simulator import TB3Sim
 
 
 def true_pose(sim: TB3Sim) -> np.ndarray:

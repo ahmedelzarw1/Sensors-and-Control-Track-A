@@ -1,13 +1,13 @@
-"""Random layouts: every rule of robot_code/room/random_room.py holds, and nothing clashes in the simulated world."""
+"""Random layouts: every rule of robot_code/random_room.py holds, and nothing clashes in the simulated world."""
 import numpy as np
 import pytest
 
 from experiments.run_simulation import robot_obstacle_contacts
-from robot_code.room import room_map as km
-from robot_code.room import random_room as rl
-from robot_code.path_planning.astar_grid import known_map_grid
-from robot_code.path_planning.plan_path import plan_reference
-from robot_code.simulated_robot.mujoco_room import load_room_sim
+from robot_code import room_map as km
+from robot_code import random_room as rl
+from robot_code.path_planning import known_map_grid
+from robot_code.path_planning import plan_reference
+from robot_code.simulator import load_room_sim
 
 SEEDS = range(40)
 

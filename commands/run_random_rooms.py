@@ -33,16 +33,16 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 from experiments.scores import wilson_interval  # noqa: E402
-from experiments.outputs.serial_monitor import SerialMonitor, print_layout  # noqa: E402
-from experiments.outputs.photos import PhotoTaker  # noqa: E402
-from experiments.outputs.draw_room import draw_map, robot_triangle  # noqa: E402
-from experiments.outputs.run_report import episode_metrics, plot_episode, write_csv  # noqa: E402
+from experiments.serial_monitor import SerialMonitor, print_layout  # noqa: E402
+from experiments.photos import PhotoTaker  # noqa: E402
+from experiments.plots import draw_map, robot_triangle  # noqa: E402
+from experiments.plots import episode_metrics, plot_episode, write_csv  # noqa: E402
 from experiments.run_simulation import EpisodeConfig, run_episode  # noqa: E402
-from experiments.outputs.video import DemoVideo  # noqa: E402
-from robot_code.room import room_map as km  # noqa: E402
-from robot_code.room import random_room as rl  # noqa: E402
-from robot_code.path_planning.astar_grid import known_map_grid  # noqa: E402
-from robot_code.path_planning.plan_path import plan_reference  # noqa: E402
+from experiments.video import DemoVideo  # noqa: E402
+from robot_code import room_map as km  # noqa: E402
+from robot_code import random_room as rl  # noqa: E402
+from robot_code.path_planning import known_map_grid  # noqa: E402
+from robot_code.path_planning import plan_reference  # noqa: E402
 
 OUT = ROOT / "results" / "random_rooms"
 

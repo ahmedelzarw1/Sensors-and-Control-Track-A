@@ -2,11 +2,11 @@ import numpy as np
 import pytest
 from scipy.signal import cont2discrete
 
-from robot_code.controller.lqr_controller import LQRTracker, design_gain, tvlqr_gains
-from robot_code.movement_maths.unicycle_model import (F_unicycle, H_marker_pose, H_marker_range_bearing, ctrb, error_dynamics,
+from robot_code.lqr_controller import LQRTracker, design_gain, tvlqr_gains
+from robot_code.unicycle_model import (F_unicycle, H_marker_pose, H_marker_range_bearing, ctrb, error_dynamics,
                                 error_model, f_unicycle, linearise, observability_matrix_ltv, rank,
                                 tracking_error, zoh)
-from robot_code.path_planning.reference_path import integrate_reference
+from robot_code.path_planning import integrate_reference
 from robot_code.data_types import StateEstimate
 
 Ts = 0.1

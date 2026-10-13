@@ -4,16 +4,16 @@ Baseline written for the EKF teammate to take over. Implements the Estimator pro
 How the noise values were measured and tuned: README.md (How it works).
 
 State   x = [x, y, theta], the pose of the base frame B in W.
-Predict x+ = f(x, u_odom)            (exact unicycle over one period, robot_code/movement_maths/unicycle_model.py)
+Predict x+ = f(x, u_odom)            (exact unicycle over one period, robot_code/unicycle_model.py)
         P+ = F P F^T + G Qu G^T + Qa
         F = df/dx, G = df/du. Qu = diag(sigma_v^2, sigma_omega^2) is the odometry noise. Qa is extra noise per step
         for what the odometry model does not capture (wheel slip, the transient after command changes, wheel radius
-        error). Values: EKFParams below, measured by experiments/calibration/calibrate_wheels.py.
+        error). Values: EKFParams below, measured by experiments/calibrate_wheels.py.
 Update  z = base_T_marker = [x_M, y_M, yaw_M] in B, from the camera (robot_code/vision).
-        h(x) = [R(theta)^T (m_xy - p), wrap(m_yaw - theta)] with the known marker pose m in W (robot_code/room/room_map.py).
-        H = dh/dx (H_marker_pose in robot_code/movement_maths/unicycle_model.py). Innovation nu = z - h(x) with the yaw wrapped.
+        h(x) = [R(theta)^T (m_xy - p), wrap(m_yaw - theta)] with the known marker pose m in W (robot_code/room_map.py).
+        H = dh/dx (H_marker_pose in robot_code/unicycle_model.py). Innovation nu = z - h(x) with the yaw wrapped.
         Using the full pose of the marker (not only range and bearing) makes the whole pose observable from a single
-        marker (robot_code/movement_maths/unicycle_model.py, H_marker_pose, and tests/test_movement_maths.py).
+        marker (robot_code/unicycle_model.py, H_marker_pose, and tests/test_movement_maths.py).
 Gate    NIS = nu^T S^-1 nu, S = H P H^T + R. The update is applied only if NIS < chi2(3 dof, gate_prob). This rejects
         the planar pose ambiguity flips of the square marker and any wrong detection.
 Update form: Joseph form, which keeps P symmetric and positive definite.
@@ -28,13 +28,13 @@ from typing import Optional
 import numpy as np
 from scipy.stats import chi2
 
-from robot_code.room import room_map as km
-from robot_code.movement_maths.unicycle_model import F_unicycle, G_unicycle, H_marker_pose, f_unicycle
+from robot_code import room_map as km
+from robot_code.unicycle_model import F_unicycle, G_unicycle, H_marker_pose, f_unicycle
 from robot_code.data_types import MarkerMeasurement, Odometry, StateEstimate, wrap
 
 
-CALIBRATION_JSON = Path(__file__).resolve().parents[2] / "settings" / "wheel_calibration.json"
-TUNING_JSON = Path(__file__).resolve().parents[2] / "settings" / "kalman_filter_tuning.json"
+CALIBRATION_JSON = Path(__file__).resolve().parents[1] / "settings" / "wheel_calibration.json"
+TUNING_JSON = Path(__file__).resolve().parents[1] / "settings" / "kalman_filter_tuning.json"
 
 
 @dataclass(frozen=True)
@@ -51,7 +51,7 @@ class EKFParams:
     q_theta: float = 0.004            # rad
     k_dist: float = 0.02              # m of position noise std per m travelled
     k_turn: float = 0.02              # rad of heading noise std per rad turned
-    q_inflation: float = 1.0          # multiplies the extra noise std (chosen by experiments/calibration/tune_kalman_filter.py)
+    q_inflation: float = 1.0          # multiplies the extra noise std (chosen by experiments/tune_kalman_filter.py)
     gate_prob: float = 0.99           # chi-square gate probability, 3 degrees of freedom
     # Re-initialisation after repeated rejections (recovery from a lost filter). See reinit logic below.
     reinit_after: int = 8             # consecutive gated-out measurements that agree with each other
@@ -59,8 +59,8 @@ class EKFParams:
 
     @classmethod
     def calibrated(cls, path: Path = CALIBRATION_JSON, use_tuning: bool = True, **overrides) -> "EKFParams":
-        """Parameters from the offline odometry calibration (experiments/calibration/calibrate_wheels.py) and, if use_tuning,
-        the process-noise inflation chosen by the consistency tuning (experiments/calibration/tune_kalman_filter.py)."""
+        """Parameters from the offline odometry calibration (experiments/calibrate_wheels.py) and, if use_tuning,
+        the process-noise inflation chosen by the consistency tuning (experiments/tune_kalman_filter.py)."""
         cal = json.loads(Path(path).read_text())
         q = cal["extra_noise_per_step"]
         kw = dict(scale_v=cal["scale_v"], scale_omega=cal["scale_omega"], q_xy=q["q_xy_m"], q_theta=q["q_theta_rad"],

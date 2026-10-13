@@ -1,6 +1,6 @@
 """Consistency tuning of the EKF extra process noise (NIS and NEES based).
 
-The odometry calibration (experiments/calibration/calibrate_wheels.py) measures the extra process noise on short open-loop
+The odometry calibration (experiments/calibrate_wheels.py) measures the extra process noise on short open-loop
 manoeuvres. Closed-loop runs contain effects those manoeuvres underrepresent (turns in place during the marker search,
 start-up from rest, correlated slip), so the measured values are multiplied by an inflation factor. This script runs
 the docking mission for several inflation factors and reports the filter consistency:
@@ -15,7 +15,7 @@ is. Scaling the yaw R is the standard remedy. The pair chosen is the smallest th
 rejection rate near 1 percent.
 Ground truth is used for NEES here only.
 
-Run: python -m experiments.calibration.tune_kalman_filter
+Run: python -m experiments.tune_kalman_filter
 """
 from __future__ import annotations
 
@@ -29,10 +29,10 @@ import numpy as np
 
 from experiments.scores import nees
 from experiments.run_simulation import EpisodeConfig, run_episode
-from robot_code.room import room_map as km
-from robot_code.localisation.kalman_filter import EKFParams
+from robot_code import room_map as km
+from robot_code.kalman_filter import EKFParams
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "results" / "calibration"
 TUNING_JSON = ROOT / "settings" / "kalman_filter_tuning.json"
 NEES_TOL = 0.25          # |mean NEES - 3| accepted as consistent
@@ -83,7 +83,7 @@ def main(grid=GRID, seeds=(1, 2), workers: int = 6) -> None:
         return
     best = min(ok, key=lambda s: (s["q_inflation"], s["yaw_r_scale"]))
     TUNING_JSON.write_text(json.dumps({
-        "source": f"experiments/calibration/tune_kalman_filter.py, {len(km.START_POSES)} start poses x {len(seeds)} seeds per setting",
+        "source": f"experiments/tune_kalman_filter.py, {len(km.START_POSES)} start poses x {len(seeds)} seeds per setting",
         "rule": f"smallest (q_inflation, yaw_r_scale) with all runs docked, |mean NEES - 3| <= {NEES_TOL} and gate "
                 f"rejections <= {MAX_REJECTED:.0%}",
         "q_inflation": best["q_inflation"], "yaw_r_scale": best["yaw_r_scale"],

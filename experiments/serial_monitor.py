@@ -15,8 +15,8 @@ import sys
 
 import numpy as np
 
-from robot_code.room import room_map as km
-from robot_code.movement_maths.unicycle_model import tracking_error
+from robot_code import room_map as km
+from robot_code.unicycle_model import tracking_error
 
 
 def print_layout(layout: km.Layout, report=None, out=sys.stdout) -> None:

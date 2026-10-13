@@ -3,7 +3,7 @@
 Everything the three subsystems exchange is defined here, so that the estimator,
 the docking logic and the controller can be developed independently.
 
-Conventions (the frame chain from camera to robot is in robot_code/vision/marker_detection.py)
+Conventions (the frame chain from camera to robot is in robot_code/vision.py)
 - SI units. Angles in radians, wrapped to [-pi, pi).
 - World frame W: MuJoCo world frame, z up. Planar pose is (x, y, theta) of the
   robot base frame B in W, theta is yaw about +z, counter-clockwise positive.

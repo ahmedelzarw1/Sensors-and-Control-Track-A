@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from matplotlib.backends.backend_agg import FigureCanvasAgg  # noqa: E402
 
-from experiments.outputs.draw_room import draw_map, ellipse_points  # noqa: E402
-from robot_code.room import room_map as km  # noqa: E402
+from experiments.plots import draw_map, ellipse_points  # noqa: E402
+from robot_code import room_map as km  # noqa: E402
 
 # drawFrameAxes warns when an axis tip falls outside the image (normal when docked close to the marker); the warning
 # does not affect the drawing of the visible part, so only errors are logged.

@@ -24,10 +24,10 @@ sys.path.insert(0, str(ROOT))
 
 import numpy as np  # noqa: E402
 
-from experiments.outputs.run_report import episode_metrics, plot_drift, plot_episode, write_csv  # noqa: E402
+from experiments.plots import episode_metrics, plot_drift, plot_episode, write_csv  # noqa: E402
 from experiments.run_simulation import EpisodeConfig, run_episode  # noqa: E402
-from experiments.outputs.video import DemoVideo  # noqa: E402
-from robot_code.room import room_map as km  # noqa: E402
+from experiments.video import DemoVideo  # noqa: E402
+from robot_code import room_map as km  # noqa: E402
 
 OUT = ROOT / "results" / "demo"
 

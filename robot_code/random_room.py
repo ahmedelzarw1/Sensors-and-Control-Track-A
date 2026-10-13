@@ -31,9 +31,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from robot_code.room import room_map as km
-from robot_code.path_planning.astar_grid import known_map_grid
-from robot_code.path_planning.plan_path import PlannerParams, plan_reference
+from robot_code import room_map as km
+from robot_code.path_planning import known_map_grid
+from robot_code.path_planning import PlannerParams, plan_reference
 
 N_OBSTACLES = (3, 5)
 BOX_HALF = (0.08, 0.30)

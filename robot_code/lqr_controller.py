@@ -1,27 +1,34 @@
-"""LQR trajectory tracker on the linearised tracking-error model.
+"""Controller: turns "where I am" and "where I should be" into speed and turn commands.
 
-The controller takes only a StateEstimate and the reference. It never sees ground truth.
-
-Three ways of choosing the gain are provided so they can be compared in the evaluation:
-- "fixed":     one gain designed at a nominal operating point (v_nom, omega = 0).
-- "scheduled": the discrete algebraic Riccati equation is solved at each reference sample
-               (frozen-time LQR). Cheap for a 3-state model.
-- "tv":        finite-horizon time-varying LQR by a backward Riccati recursion along the reference.
-
-Weights follow Bryson's rule. The default numbers below are INITIAL values chosen for a first
-working design. They are not yet tuned or validated. Record the final values and the
-justification in README.md.
+1. LQR tracker: feedforward plus LQR feedback on the estimated tracking error (Bryson weights, Riccati gain).
+2. Smooth commands: a slew-rate limit on how fast the commands may change.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
-
 import numpy as np
 from scipy.linalg import solve_discrete_are
-
-from robot_code.movement_maths.unicycle_model import error_model, tracking_error
+from robot_code.unicycle_model import error_model, tracking_error
 from robot_code.data_types import ControlCmd, ReferenceTrajectory, StateEstimate
+from robot_code.data_types import ControlCmd
 
+
+# ==============================================================================================================
+# 1. LQR TRACKER
+# LQR trajectory tracker on the linearised tracking-error model.
+#
+# The controller takes only a StateEstimate and the reference. It never sees ground truth.
+#
+# Three ways of choosing the gain are provided so they can be compared in the evaluation:
+# - "fixed":     one gain designed at a nominal operating point (v_nom, omega = 0).
+# - "scheduled": the discrete algebraic Riccati equation is solved at each reference sample
+#                (frozen-time LQR). Cheap for a 3-state model.
+# - "tv":        finite-horizon time-varying LQR by a backward Riccati recursion along the reference.
+#
+# Weights follow Bryson's rule. The default numbers below are INITIAL values chosen for a first
+# working design. They are not yet tuned or validated. Record the final values and the
+# justification in README.md.
+# ==============================================================================================================
 
 def bryson(max_state: np.ndarray, max_input: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Bryson's rule: Q_ii = 1 / max_state_i^2, R_jj = 1 / max_input_j^2."""
@@ -111,3 +118,30 @@ class LQRTracker:
         v = float(np.clip(u_ref[0] + du[0], -self.limits.v_max, self.limits.v_max))
         w = float(np.clip(u_ref[1] + du[1], -self.limits.omega_max, self.limits.omega_max))
         return ControlCmd(v=v, omega=w)
+
+
+# ==============================================================================================================
+# 2. SMOOTH COMMANDS
+# Command slew-rate limiter.
+#
+# Limits how fast v and omega may change per control period, so the wheel motors are not asked for sudden jumps in speed
+# (gentler on a real robot's motors and tyres). The limits are design choices to be evaluated (Stage 3 compares the
+# tracker with and without the limiter).
+# ==============================================================================================================
+
+@dataclass
+class SlewRateLimiter:
+    dv_max: float = 0.05      # m/s per 0.1 s step, i.e. 0.5 m/s^2 (assumption)
+    dw_max: float = 0.30      # rad/s per 0.1 s step, i.e. 3 rad/s^2 (assumption)
+
+    def __post_init__(self):
+        self._last = ControlCmd(0.0, 0.0)
+
+    def reset(self) -> None:
+        self._last = ControlCmd(0.0, 0.0)
+
+    def apply(self, cmd: ControlCmd) -> ControlCmd:
+        v = self._last.v + float(np.clip(cmd.v - self._last.v, -self.dv_max, self.dv_max))
+        w = self._last.omega + float(np.clip(cmd.omega - self._last.omega, -self.dw_max, self.dw_max))
+        self._last = ControlCmd(v, w)
+        return self._last

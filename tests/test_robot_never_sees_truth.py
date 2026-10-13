@@ -13,7 +13,7 @@ FORBIDDEN_NAMES = {"_ground_truth_pose", "true_pose"}
 def test_robot_code_does_not_touch_ground_truth():
     files = list(ROBOT_CODE.rglob("*.py"))
     # Guard: if the folder were renamed or empty, this test would otherwise pass while checking nothing.
-    assert len(files) >= 20, f"expected the robot's code in {ROBOT_CODE}, found {len(files)} files"
+    assert len(files) >= 10, f"expected the robot's code in {ROBOT_CODE}, found {len(files)} files"
     offenders = []
     for path in files:
         tree = ast.parse(path.read_text())

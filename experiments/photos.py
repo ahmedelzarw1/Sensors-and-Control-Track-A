@@ -15,8 +15,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from experiments.outputs.draw_room import draw_map, ellipse_points, robot_triangle  # noqa: E402
-from experiments.outputs.video import annotate_camera  # noqa: E402
+from experiments.plots import draw_map, ellipse_points, robot_triangle  # noqa: E402
+from experiments.video import annotate_camera  # noqa: E402
 
 
 class PhotoTaker:

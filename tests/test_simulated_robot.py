@@ -3,7 +3,7 @@ import pytest
 
 from experiments.true_position import true_pose
 from robot_code.data_types import ControlCmd
-from robot_code.simulated_robot.simulator import OdomNoise, TB3Sim
+from robot_code.simulator import OdomNoise, TB3Sim
 
 
 @pytest.fixture()
@@ -120,7 +120,7 @@ def test_chassis_collides_with_obstacles():
 
 def test_robot_radius_in_the_known_map_encloses_the_collision_geometry(sim):
     import mujoco
-    from robot_code.room import room_map as km
+    from robot_code import room_map as km
     m, d = sim.model, sim.data
     sim.reset((0.0, 0.0, 0.0))
     b = sim._foot

@@ -8,10 +8,10 @@ import pytest
 
 from experiments.true_position import true_pose
 from experiments.scores import tracking_metrics
-from robot_code.controller.lqr_controller import LQRTracker
-from robot_code.path_planning.reference_path import integrate_reference
+from robot_code.lqr_controller import LQRTracker
+from robot_code.path_planning import integrate_reference
 from robot_code.data_types import ControlCmd, StateEstimate
-from robot_code.simulated_robot.simulator import TB3Sim
+from robot_code.simulator import TB3Sim
 
 Ts = 0.1
 

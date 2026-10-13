@@ -27,13 +27,13 @@ from typing import Optional
 
 import numpy as np
 
-from robot_code.room import room_map as km
-from robot_code.controller.lqr_controller import LQRTracker
-from robot_code.controller.smooth_commands import SlewRateLimiter
-from robot_code.docking.docking import MarkerSearch, docking_reference, remaining_distance, should_stop
-from robot_code.movement_maths.unicycle_model import tracking_error
-from robot_code.path_planning.astar_grid import known_map_grid
-from robot_code.path_planning.plan_path import PlannerParams, plan_reference
+from robot_code import room_map as km
+from robot_code.lqr_controller import LQRTracker
+from robot_code.lqr_controller import SlewRateLimiter
+from robot_code.docking import MarkerSearch, docking_reference, remaining_distance, should_stop
+from robot_code.unicycle_model import tracking_error
+from robot_code.path_planning import known_map_grid
+from robot_code.path_planning import PlannerParams, plan_reference
 from robot_code.data_types import ControlCmd, LidarScan, Odometry, ReferenceTrajectory, StateEstimate, wrap
 
 

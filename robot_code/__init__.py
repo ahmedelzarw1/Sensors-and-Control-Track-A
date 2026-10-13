@@ -1,14 +1,16 @@
-"""Everything that runs ON the robot. It never sees the true position (tests/test_robot_never_sees_truth.py).
+"""Everything that runs ON the robot, one file per topic. It never sees the true position
+(tests/test_robot_never_sees_truth.py).
 
-Folders, in the order the data flows:
-    room/               the room the robot is given as its map, and random rooms
-    simulated_robot/    the TurtleBot3 in MuJoCo: wheels and odometry, LiDAR, camera, the MuJoCo room
-    vision/             camera image -> ArUco marker -> measurement
-    localisation/       Kalman filter: odometry + marker -> "where am I?"
-    path_planning/      A* path around the obstacles -> smooth reference path
-    controller/         LQR: where I am + where I should be -> speed and turn commands
-    docking/            final approach, stop rule, marker search
-    movement_maths/     the maths of movement used by localisation, path planning and the controller
-    robot_brain.py      decides what to do every 0.1 s, using all of the above
-    data_types.py       the messages the parts pass to each other
+    robot_brain.py       decides what to do every 0.1 s: find the marker, plan, drive, dock
+    unicycle_model.py    how the robot moves: model, linearisation, controllability, observability
+    lqr_controller.py    LQR tracker and command smoothing
+    kalman_filter.py     EKF: odometry + marker -> "where am I?"
+    vision.py            camera maths, ArUco marker detection, measurement noise
+    lidar.py             LiDAR occupancy map of the obstacles and the LiDAR safety stop
+    path_planning.py     A*, smooth path, speed profile
+    docking.py           final approach, stop rule, marker search
+    room_map.py          the room the robot is given (walls, dock, marker, start pads)
+    random_room.py       random rooms with the no-clash rules
+    simulator.py         MuJoCo: the robot, wheels, odometry, LiDAR scan, camera, building the room
+    data_types.py        the messages the parts pass to each other
 """

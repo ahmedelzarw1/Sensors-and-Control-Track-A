@@ -18,10 +18,10 @@ Procedure
    which is larger than the raw per-step spread, so the filter is not overconfident.
 4. The extra noise is split into a constant part and parts proportional to the distance and the angle moved.
 
-Ground truth is used here only. Output: settings/wheel_calibration.json (read by robot_code/localisation/kalman_filter.py) and
+Ground truth is used here only. Output: settings/wheel_calibration.json (read by robot_code/kalman_filter.py) and
 results/calibration/odometry_*.png|json.
 
-Run: python -m experiments.calibration.calibrate_wheels
+Run: python -m experiments.calibrate_wheels
 """
 from __future__ import annotations
 
@@ -34,12 +34,12 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 from experiments.true_position import true_pose  # noqa: E402
-from robot_code.controller.smooth_commands import SlewRateLimiter  # noqa: E402
-from robot_code.movement_maths.unicycle_model import f_unicycle  # noqa: E402
+from robot_code.lqr_controller import SlewRateLimiter  # noqa: E402
+from robot_code.unicycle_model import f_unicycle  # noqa: E402
 from robot_code.data_types import ControlCmd, wrap  # noqa: E402
-from robot_code.simulated_robot.simulator import DEFAULT_XML, OdomNoise, TB3Sim  # noqa: E402
+from robot_code.simulator import DEFAULT_XML, OdomNoise, TB3Sim  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "results" / "calibration"
 CAL_JSON = ROOT / "settings" / "wheel_calibration.json"
 Ts = 0.1
@@ -134,7 +134,7 @@ def main() -> None:
     q_th, k_turn = np.linalg.lstsq(A, np.abs(Rall[:, 2]) * np.sqrt(np.pi / 2), rcond=None)[0]
 
     cal = {
-        "source": "experiments/calibration/calibrate_wheels.py, %d manoeuvres, %d steps, default odometry noise" % (
+        "source": "experiments/calibrate_wheels.py, %d manoeuvres, %d steps, default odometry noise" % (
             len(MANOEUVRES), len(Uall)),
         "scale_v": cv,
         "scale_omega": cw,
