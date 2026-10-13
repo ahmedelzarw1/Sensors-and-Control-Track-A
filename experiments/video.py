@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from matplotlib.backends.backend_agg import FigureCanvasAgg  # noqa: E402
 
-from experiments.plots import draw_map, ellipse_points  # noqa: E402
+from experiments.plots import draw_map, ellipse_points, lidar_map_rgba  # noqa: E402
 from robot_code import room_map as km  # noqa: E402
 
 # drawFrameAxes warns when an axis tip falls outside the image (normal when docked close to the marker); the warning
@@ -53,6 +53,8 @@ class DemoVideo:
         self.true_line, = self.ax.plot([], [], "b", lw=1.5, label="true path")
         self.est_line, = self.ax.plot([], [], "r", lw=1.0, label="EKF estimate")
         self.ell, = self.ax.plot([], [], "r", lw=0.8, label="3 sigma position")
+        self.lidar_img = None
+        self.ax.plot([], [], "s", color=(0.85, 0.1, 0.1), alpha=0.65, ms=5, label="obstacles found by the LiDAR")
         self.true_tri, = self.ax.plot([], [], "b", lw=1.2)
         self.est_tri, = self.ax.plot([], [], "r", lw=1.2)
         self.text = self.ax.text(km.ROOM_X_MIN + 0.05, km.ROOM_Y_MAX - 0.08, "", fontsize=8, va="top",
@@ -78,6 +80,14 @@ class DemoVideo:
         P = np.array([[log["Pxx"][-1], log["Pxy"][-1]], [log["Pxy"][-1], log["Pyy"][-1]]])
         e = ellipse_points([xh[-1], yh[-1]], P)
         self.ell.set_data(e[:, 0], e[:, 1])
+        if getattr(mission, "lidar_map", None) is not None:
+            img, extent = lidar_map_rgba(mission.lidar_map)
+            if self.lidar_img is None:
+                self.lidar_img = self.ax.imshow(img, extent=extent, origin="lower", zorder=1, interpolation="nearest")
+                self.ax.set_xlim(km.ROOM_X_MIN - 0.1, km.ROOM_X_MAX + 0.1)
+                self.ax.set_ylim(km.ROOM_Y_MIN - 0.1, km.ROOM_Y_MAX + 0.1)
+            else:
+                self.lidar_img.set_data(img)
         tt = _tri((x[-1], y[-1], log["th"][-1]))
         te = _tri((xh[-1], yh[-1], log["thh"][-1]))
         self.true_tri.set_data(tt[:, 0], tt[:, 1])

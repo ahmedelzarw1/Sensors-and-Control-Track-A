@@ -52,6 +52,17 @@ def draw_map(ax, show_dock: bool = True, layout=None) -> None:
     ax.set_ylabel("y [m]")
 
 
+def lidar_map_rgba(lidar_map) -> tuple[np.ndarray, list]:
+    """The obstacle cells the LiDAR has found, as a red RGBA image, and its extent for imshow (origin='lower')."""
+    g = lidar_map.walls
+    obs = lidar_map.obstacles()
+    img = np.zeros(obs.shape + (4,))
+    img[obs] = (0.85, 0.1, 0.1, 0.65)
+    ny, nx = obs.shape
+    extent = [g.x0 - g.res / 2, g.x0 + (nx - 0.5) * g.res, g.y0 - g.res / 2, g.y0 + (ny - 0.5) * g.res]
+    return img, extent
+
+
 def robot_triangle(ax, pose, color, size: float = 0.12, **kw):
     x, y, th = pose
     pts = np.array([[size, 0.0], [-0.6 * size, 0.5 * size], [-0.6 * size, -0.5 * size]])

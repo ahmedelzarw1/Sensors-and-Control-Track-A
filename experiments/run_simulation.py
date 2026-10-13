@@ -52,6 +52,8 @@ class EpisodeConfig:
     vision_r_scale: tuple = (1.0, 1.0, 1.0)     # extra multiplier on the measurement std (x, y, yaw), for tuning
     use_tuning: bool = True                     # False: ignore settings/kalman_filter_tuning.json (used by the tuning itself)
     layout: Optional[km.Layout] = None          # None: the fixed room with start pad `start`; else a (random) layout
+    use_lidar: bool = True                      # True: the robot finds the obstacles with the LiDAR; False: full map
+    localise_fixes: int = 3                     # marker fixes collected before driving (0: plan at once, map empty)
 
 
 @dataclass
@@ -135,7 +137,10 @@ def run_episode(cfg: EpisodeConfig, frame_hook=None, step_hook: Optional[Callabl
     p = sim.params
     w_lim = cfg.omega_max if cfg.omega_max is not None else 2.0 * p.wheel_radius * p.max_wheel_speed / p.wheel_separation
     tracker = LQRTracker(Ts, mode=cfg.tracker_mode, limits=Limits(v_max=p.wheel_radius * p.max_wheel_speed, omega_max=w_lim))
-    mission = DockingMission(ekf, sensor, tracker, MissionConfig(Ts=Ts, timeout=cfg.timeout),
+    lidar_xy = tuple(float(v) for v in sim.sensor_extrinsics()["lidar"]["t"][:2])
+    mission = DockingMission(ekf, sensor, tracker, MissionConfig(Ts=Ts, timeout=cfg.timeout, use_lidar=cfg.use_lidar,
+                                                                 lidar_offset_xy=lidar_xy,
+                                                                 localise_fixes=cfg.localise_fixes),
                              slew=SlewRateLimiter() if cfg.slew else None, layout=cfg.layout)
 
     keys = ["t", "phase", "x", "y", "th", "xh", "yh", "thh", "Pxx", "Pxy", "Pyy", "Pxt", "Pyt", "Ptt", "v_cmd", "w_cmd",

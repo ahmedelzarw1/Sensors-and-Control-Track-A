@@ -45,6 +45,8 @@ def main() -> None:
     ap.add_argument("--no-panel", action="store_true", help="hide the live video panel")
     ap.add_argument("--panel-size", type=float, default=0.5, help="panel width as a fraction of the window width")
     ap.add_argument("--record", action="store_true", help="also save the video panel as an MP4")
+    ap.add_argument("--known-map", action="store_true",
+                    help="give the robot the full room map instead of finding the obstacles with the LiDAR")
     args = ap.parse_args()
     layout = None
     if args.random is not None:
@@ -127,7 +129,8 @@ def main() -> None:
             v.close()
         state["viewer"], state["phase"] = None, None
 
-    cfg = EpisodeConfig(start=args.start if layout is None else "random", seed=args.seed, layout=layout)
+    cfg = EpisodeConfig(start=args.start if layout is None else "random", seed=args.seed, layout=layout,
+                        use_lidar=not args.known_map)
     try:
         while True:
             try:

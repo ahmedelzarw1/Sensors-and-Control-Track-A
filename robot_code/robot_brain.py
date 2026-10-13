@@ -1,20 +1,25 @@
 """The docking mission: sensors in, velocity command out. This is the whole on-robot pipeline.
 
-Inputs each control period: wheel odometry, an optional LiDAR scan (passed in, not yet used: LiDAR mapping is Stage 2)
-and the camera image. It never receives ground truth.
+Inputs each control period: wheel odometry, a LiDAR scan (every second step, 5 Hz) and the camera image. It never
+receives ground truth.
 
 Per step
 1. EKF predict with the odometry, then EKF update with the marker measurement from the camera, if any.
-2. Phase logic below picks the command. 3. The slew-rate limiter smooths it.
+2. LiDAR: add the scan to the obstacle map, placed with the estimated pose (robot_code/lidar.py).
+3. Phase logic below picks the command. 4. The slew-rate limiter smooths it.
+
+Map. With use_lidar (the default) the robot is told only the walls and the charging station and finds the obstacles
+with the LiDAR. With use_lidar=False it is given the full room map instead (used for comparison).
 
 Phases
 - LOCALISE: before driving, turn towards where the prior says the marker is (and sweep if needed) until
            localise_fixes marker measurements have been accepted, or give up after localise_timeout and continue on the
            prior alone. This initialises the estimate from the marker instead of only from the start pad.
-- PLAN:    plan a path from the estimated pose to the pre-dock pose (known-map grid or LiDAR grid).
+- PLAN:    plan a path from the estimated pose to the pre-dock pose (LiDAR map, or the full room map).
 - ALIGN:   turn in place towards the start direction of the path (state feedback on the estimated heading).
-- TRACK:   LQR tracking of the path. If the estimated tracking error becomes large (typically after the marker comes
-           into view and corrects the estimate), go back to PLAN.
+- TRACK:   LQR tracking of the path. Go back to PLAN if the estimated tracking error becomes large (typically after the
+           marker comes into view and corrects the estimate), if the LiDAR shows an obstacle on the rest of the path, or
+           if the LiDAR safety stop triggers (something too close ahead).
 - ACQUIRE: at the end of the path, if the marker has not been accepted recently, search for it (robot_code/docking).
 - DOCK:    LQR tracking of the docking reference built from the current estimate; stop by the stop rule.
 - DONE / FAILED.
@@ -31,6 +36,7 @@ from robot_code import room_map as km
 from robot_code.lqr_controller import LQRTracker
 from robot_code.lqr_controller import SlewRateLimiter
 from robot_code.docking import MarkerSearch, docking_reference, remaining_distance, should_stop
+from robot_code.lidar import LidarMap, front_blocked, front_distance
 from robot_code.unicycle_model import tracking_error
 from robot_code.path_planning import known_map_grid
 from robot_code.path_planning import PlannerParams, plan_reference
@@ -64,6 +70,10 @@ class MissionConfig:
     localise_fixes: int = 3           # accepted marker fixes required before driving
     localise_timeout: float = 20.0    # s, then continue on the prior
     planner_params: PlannerParams = field(default_factory=PlannerParams)
+    use_lidar: bool = True            # find the obstacles with the LiDAR (False: use the full room map)
+    lidar_offset_xy: tuple = (-0.032, 0.0)   # LiDAR position in the robot frame (ROBOTIS LDS-01 mount)
+    lidar_replan_interval: float = 1.0       # s, at most one LiDAR-triggered replan per interval
+    max_lidar_replans: int = 40
 
 
 class DockingMission:
@@ -73,7 +83,12 @@ class DockingMission:
         self.slew = slew
         if self.slew is not None:
             self.slew.reset()
-        self.known_grid = known_map_grid(layout=layout)  # the map the robot is given
+        self.known_grid = known_map_grid(layout=layout)  # the full room map (used only when use_lidar is False)
+        self.lidar_map = LidarMap(cfg.lidar_offset_xy) if cfg.use_lidar else None
+        self.last_scan: Optional[LidarScan] = None
+        self.new_scan = False
+        self.last_lidar_replan = -np.inf
+        self.n_lidar_replans = 0
         self.phase = Phase.LOCALISE if cfg.localise_fixes > 0 else Phase.PLAN
         self.n_fixes = 0
         self.ref: Optional[ReferenceTrajectory] = None
@@ -92,8 +107,11 @@ class DockingMission:
     def _event(self, msg: str) -> None:
         self.events.append((round(self.t, 2), msg))
 
+    def planning_grid(self):
+        return self.lidar_map.grid() if self.lidar_map is not None else self.known_grid
+
     def _plan(self, est: StateEstimate) -> None:
-        plan = plan_reference(self.known_grid, est.x_hat, km.PRE_DOCK_POSE, self.cfg.Ts, self.cfg.planner_params)
+        plan = plan_reference(self.planning_grid(), est.x_hat, km.PRE_DOCK_POSE, self.cfg.Ts, self.cfg.planner_params)
         if plan is None:
             self._event("no path found")
             self.phase = Phase.FAILED
@@ -116,6 +134,30 @@ class DockingMission:
         self.phase = Phase.DOCK
         self._event("docking reference built")
 
+    def _lidar_replan_needed(self) -> bool:
+        """LiDAR checks while following a path: the safety stop, and a newly seen obstacle on the rest of the path.
+        Either one sends the robot back to PLAN (at most once per lidar_replan_interval)."""
+        if self.lidar_map is None or not self.new_scan or self.t - self.last_lidar_replan < self.cfg.lidar_replan_interval:
+            return False
+        reason = None
+        if front_blocked(self.last_scan, self.cfg.lidar_offset_xy):
+            reason = f"LiDAR safety stop: obstacle {front_distance(self.last_scan, self.cfg.lidar_offset_xy):.2f} m ahead"
+        else:
+            rest = slice(self.k, len(self.ref), 3)
+            if self.lidar_map.path_blocked(self.ref.x[rest], self.ref.y[rest], km.ROBOT_RADIUS + 0.03):
+                reason = "LiDAR: obstacle on the path"
+        if reason is None:
+            return False
+        self.last_lidar_replan = self.t
+        self.n_lidar_replans += 1
+        self._event(reason + ", replanning")
+        if self.n_lidar_replans > self.cfg.max_lidar_replans:
+            self._event("too many LiDAR replans")
+            self.phase = Phase.FAILED
+        else:
+            self.phase = Phase.PLAN
+        return True
+
     def marker_recent(self) -> bool:
         return self.t - self.last_fix_t <= self.cfg.fix_recent
 
@@ -131,7 +173,13 @@ class DockingMission:
             self.last_fix_t = t
             self.n_fixes += 1
         est = self.ekf.estimate()
+        self.new_scan = lidar is not None
+        if lidar is not None:
+            self.last_scan = lidar
+            if self.lidar_map is not None:
+                self.lidar_map.add_scan(lidar, est)
         self.info = {"meas": meas, "accepted": accepted,
+                     "front": front_distance(self.last_scan, self.cfg.lidar_offset_xy) if self.last_scan else np.inf,
                      "nis": self.ekf.updates[-1].nis if meas is not None and self.ekf.updates else np.nan}
 
         cmd = self._decide(est)
@@ -198,6 +246,8 @@ class DockingMission:
                         self.phase = Phase.FAILED
                         return ControlCmd(0.0, 0.0)
                     self.phase = Phase.PLAN
+                    return self._decide(est)
+                if self._lidar_replan_needed():
                     return self._decide(est)
                 cmd = self.tracker.command(est, self.ref, self.k)
                 self.k += 1

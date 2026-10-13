@@ -48,6 +48,11 @@ class Grid:
     def to_cell(self, x: float, y: float) -> tuple[int, int]:
         return int(round((y - self.y0) / self.res)), int(round((x - self.x0) / self.res))
 
+    def to_cell_array(self, x, y) -> tuple[np.ndarray, np.ndarray]:
+        """to_cell for arrays of points (rows i, columns j)."""
+        return (np.round((np.asarray(y) - self.y0) / self.res).astype(int),
+                np.round((np.asarray(x) - self.x0) / self.res).astype(int))
+
     def to_world(self, i: int, j: int) -> tuple[float, float]:
         return self.x0 + j * self.res, self.y0 + i * self.res
 

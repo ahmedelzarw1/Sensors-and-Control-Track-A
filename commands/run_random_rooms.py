@@ -94,7 +94,7 @@ def plot_layout(layout: km.Layout, report, path: Path) -> None:
 
 def run_one(seed: int, args) -> dict:
     layout, report = rl.sample_layout(seed, allow_hidden=args.allow_hidden)
-    out = OUT / f"seed_{seed}"
+    out = (OUT / "known_map" if args.known_map else OUT / "no_localise" if args.no_localise else OUT) / f"seed_{seed}"
     out.mkdir(parents=True, exist_ok=True)
     # The monitor output always goes to monitor.txt, and to the terminal unless --quiet.
     log_file = open(out / "monitor.txt", "w")
@@ -110,7 +110,9 @@ def run_one(seed: int, args) -> dict:
     video = None if args.no_video else DemoVideo(out / "demo.mp4", title=f"random layout, seed {seed}", layout=layout)
     if video:
         hooks.append(video)
-    res = run_episode(EpisodeConfig(layout=layout, seed=seed, start="random"), frame_hook=hooks)
+    res = run_episode(EpisodeConfig(layout=layout, seed=seed, start="random", use_lidar=not args.known_map,
+                                    localise_fixes=0 if args.no_localise else 3),
+                      frame_hook=hooks)
     if video:
         video.close()
     sheet = photos.finish(res) if photos else None
@@ -118,7 +120,8 @@ def run_one(seed: int, args) -> dict:
     plot_episode(res, out, title=f"{layout.name}: {res.status}")
     (out / "events.json").write_text(json.dumps(res.events, indent=1) + "\n")
     m = episode_metrics(res)
-    m.update(n_obstacles=len(layout.obstacles), path_length_m=report.path_length,
+    m.update(n_lidar_replans=sum("LiDAR" in e[1] for e in res.events), n_obstacles=len(layout.obstacles),
+             path_length_m=report.path_length,
              marker_visible_at_start=report.marker_visible_from_start, min_obstacle_gap_m=report.min_obstacle_gap)
     e = res.final_error
     log_file.write(f"RESULT: {res.status}, dock error {1000 * e[0]:+.1f} mm along, {1000 * e[1]:+.1f} mm lateral, "
@@ -136,6 +139,10 @@ def main() -> None:
     ap.add_argument("--seed", type=int, help="layout seed (default: a new random seed, printed)")
     ap.add_argument("--count", type=int, default=1, help="number of consecutive seeds to run")
     ap.add_argument("--allow-hidden", action="store_true", help="allow start pads without a view of the marker")
+    ap.add_argument("--no-localise", action="store_true",
+                    help="skip the localisation turn: the robot plans at once on an empty LiDAR map")
+    ap.add_argument("--known-map", action="store_true",
+                    help="give the robot the full room map instead of finding the obstacles with the LiDAR")
     ap.add_argument("--every", type=int, default=5, help="monitor line every N control steps (5 = twice a second)")
     ap.add_argument("--quiet", action="store_true", help="no serial monitor output")
     ap.add_argument("--no-video", action="store_true")
@@ -149,7 +156,8 @@ def main() -> None:
         rows.append(run_one(seed, args))
     if args.count > 1:
         OUT.mkdir(parents=True, exist_ok=True)
-        path = OUT / f"summary_seeds_{seed0}_to_{seed0 + args.count - 1}.csv"
+        mode = "known_map" if args.known_map else "lidar_no_localise" if args.no_localise else "lidar"
+        path = OUT / f"summary_{mode}_seeds_{seed0}_to_{seed0 + args.count - 1}.csv"
         with open(path, "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(rows[0]))
             w.writeheader()

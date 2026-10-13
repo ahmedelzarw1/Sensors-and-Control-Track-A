@@ -39,13 +39,15 @@ def main() -> None:
     ap.add_argument("--video-all", action="store_true")
     ap.add_argument("--no-video", action="store_true")
     ap.add_argument("--hidden", action="store_true", help="also run the start pads without a view of the marker")
+    ap.add_argument("--known-map", action="store_true",
+                    help="give the robot the full room map instead of finding the obstacles with the LiDAR")
     args = ap.parse_args()
 
     starts = [args.start] if args.start else list(km.START_POSES) + (list(km.HIDDEN_START_POSES) if args.hidden else [])
     results, rows = [], []
     for i, start in enumerate(starts):
         t0 = time.time()
-        cfg = EpisodeConfig(start=start, seed=args.seed)
+        cfg = EpisodeConfig(start=start, seed=args.seed, use_lidar=not args.known_map)
         want_video = not args.no_video and (args.video_all or i == 0)
         video = DemoVideo(OUT / start / "demo.mp4", title=f"Track A docking from '{start}' (seed {args.seed})") \
             if want_video else None

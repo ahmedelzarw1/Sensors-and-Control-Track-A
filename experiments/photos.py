@@ -15,7 +15,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from experiments.plots import draw_map, ellipse_points, robot_triangle  # noqa: E402
+from experiments.plots import draw_map, ellipse_points, lidar_map_rgba, robot_triangle  # noqa: E402
+from robot_code import room_map as km  # noqa: E402
 from experiments.video import annotate_camera  # noqa: E402
 
 
@@ -36,6 +37,11 @@ class PhotoTaker:
         cam = annotate_camera(image, mission, caption=f"robot camera  t = {t:.1f} s  {label}")
         fig, ax = plt.subplots(figsize=(6.4, 4.8), dpi=100)
         draw_map(ax, layout=self.layout)
+        if getattr(mission, "lidar_map", None) is not None:
+            img, extent = lidar_map_rgba(mission.lidar_map)
+            ax.imshow(img, extent=extent, origin="lower", zorder=1, interpolation="nearest")
+            ax.set_xlim(km.ROOM_X_MIN - 0.1, km.ROOM_X_MAX + 0.1)
+            ax.set_ylim(km.ROOM_Y_MIN - 0.1, km.ROOM_Y_MAX + 0.1)
         ax.plot(log["x"], log["y"], "b", lw=1.5, label="true path")
         ax.plot(log["xh"], log["yh"], "r", lw=1.0, label="EKF estimate")
         if mission.ref is not None:

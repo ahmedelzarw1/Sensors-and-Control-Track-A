@@ -4,6 +4,8 @@ Like reading values over a serial port from a real robot, every line shows quant
 - the EKF estimate (x, y, heading) and its 1 sigma uncertainty,
 - the commanded velocities (v, omega) from the LQR tracker,
 - the marker measurement (range, bearing) and whether the filter accepted it (NIS against the gate),
+- the LiDAR: distance to the nearest thing ahead (front, used by the safety stop) and the number of obstacle cells
+  in the LiDAR map,
 - the estimated tracking error against the planned reference.
 The last column, "true err", is the distance between the estimate and the true pose. The robot never sees it; it is
 printed by the evaluation code so the viewer can judge the estimate. Events (phase changes, replans, stop rule) are
@@ -47,7 +49,7 @@ class SerialMonitor:
 
     HEADER = (f"{'t[s]':>6} {'phase':<9}{'x^[m]':>7}{'y^[m]':>7}{'th^[deg]':>9}{'sd_xy[mm]':>10}{'sd_th[deg]':>11}"
               f"{'v[m/s]':>8}{'w[rad/s]':>9}{'marker r[m]':>12}{'b[deg]':>7}{'NIS':>7}{'used':>5}"
-              f"{'e_y[mm]':>8}{'true err[mm]':>13}")
+              f"{'front[m]':>9}{'map':>6}{'e_y[mm]':>8}{'true err[mm]':>13}")
 
     def __init__(self, every: int = 5, out=sys.stdout, true_error: bool = True):
         self.every, self.out, self.true_error = every, out, true_error
@@ -74,10 +76,13 @@ class SerialMonitor:
             mtxt = f"{r:12.2f}{np.rad2deg(b):7.1f}{nis:7.2f}{'yes' if mission.info['accepted'] else 'no':>5}"
         else:
             mtxt = f"{'-':>12}{'-':>7}{'-':>7}{'':>5}"
+        front = mission.info.get("front", np.inf)
+        lm = getattr(mission, "lidar_map", None)
+        ltxt = (f"{front:9.2f}" if np.isfinite(front) else f"{'-':>9}") + (f"{int(lm.obstacles().sum()):6d}" if lm is not None else f"{'-':>6}")
         ref = mission.info["ref_pose"]
         ey = f"{1000 * tracking_error(est.x_hat, ref)[1]:8.1f}" if ref is not None else f"{'-':>8}"
         terr = (f"{1000 * np.hypot(log['x'][-1] - est.x_hat[0], log['y'][-1] - est.x_hat[1]):13.1f}"
                 if self.true_error else "")
         w(f"{log['t'][-1]:6.1f} {mission.info['phase']:<9}{est.x_hat[0]:7.3f}{est.x_hat[1]:7.3f}"
-          f"{np.rad2deg(est.x_hat[2]):9.1f}{sd_xy:10.1f}{sd_th:11.2f}{cmd.v:8.3f}{cmd.omega:9.3f}{mtxt}{ey}{terr}\n")
+          f"{np.rad2deg(est.x_hat[2]):9.1f}{sd_xy:10.1f}{sd_th:11.2f}{cmd.v:8.3f}{cmd.omega:9.3f}{mtxt}{ltxt}{ey}{terr}\n")
         self.out.flush()
