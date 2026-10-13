@@ -36,10 +36,14 @@ def _tri(pose, size=0.12):
 
 
 class DemoVideo:
-    def __init__(self, path: Path, fps: int = 10, title: str = "", layout=None):
-        self.path = Path(path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.writer = imageio.get_writer(str(self.path), fps=fps, codec="libx264", quality=7, macro_block_size=8)
+    def __init__(self, path: Path | None, fps: int = 10, title: str = "", layout=None):
+        """path None: draw the frames without saving them (used by the live viewer's video panel)."""
+        self.path = None if path is None else Path(path)
+        self.writer = None
+        if self.path is not None:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.writer = imageio.get_writer(str(self.path), fps=fps, codec="libx264", quality=7, macro_block_size=8)
+        self.last_frame = None
         self.fig = plt.figure(figsize=(W / 100, H / 100), dpi=100)
         self.canvas = FigureCanvasAgg(self.fig)
         self.ax = self.fig.add_axes([0.10, 0.11, 0.88, 0.82])
@@ -57,6 +61,13 @@ class DemoVideo:
         self._plan_id = None
 
     def __call__(self, k, image, mission, log):
+        """Draw the frame for this control step (kept in last_frame) and save it if a file was given."""
+        self.last_frame = self.frame(k, image, mission, log)
+        if self.writer is not None:
+            self.writer.append_data(self.last_frame)
+
+    def frame(self, k, image, mission, log):
+        """One video frame: the top-down view next to the robot camera, as an RGB array (480 x 1280)."""
         x, y = np.array(log["x"]), np.array(log["y"])
         xh, yh = np.array(log["xh"]), np.array(log["yh"])
         self.true_line.set_data(x, y)
@@ -79,13 +90,14 @@ class DemoVideo:
         self.canvas.draw()
         left = np.asarray(self.canvas.buffer_rgba())[:, :, :3]
         right = self._camera_panel(image, mission)
-        self.writer.append_data(np.hstack([left, right]))
+        return np.hstack([left, right])
 
     def _camera_panel(self, image, mission):
         return annotate_camera(image, mission)
 
     def close(self):
-        self.writer.close()
+        if self.writer is not None:
+            self.writer.close()
         plt.close(self.fig)
 
 
