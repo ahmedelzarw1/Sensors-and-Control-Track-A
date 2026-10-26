@@ -22,12 +22,12 @@ Full video of this run: `results/demo/west_south/demo.mp4`; a random room: `resu
 | Test | Runs | Docked | Docking position error |
 |---|---|---|---|
 | Random rooms, nominal (seeds 0 to 29) | 30 | 30 (95 percent Wilson interval 89 to 100 percent) | median 2.4 mm, max 9.2 mm |
-| Robustness: nominal plus 10 disturbance and noise conditions, 20 rooms each (seeds 300 to 319) | 219 valid (1 invalid placement) | 219 | max 7.8 mm |
+| Robustness: nominal plus 11 disturbance and noise conditions, 20 rooms each (seeds 300 to 319) | 239 valid (1 invalid placement) | 239 | max 7.8 mm |
 | Limit tests: station 0.35, 0.5 and 0.7 m from the given position (robot assumes within 0.20 m) | 60 | 60 | max 6.4 mm |
 | Fixed demo room, three start points | 3 | 3 | 1.8 to 2.6 mm |
 
 Docking success means the TRUE final pose is within 30 mm along the approach, 20 mm sideways and 5 degrees of the dock
-pose (our assumption for a charging dock with spring contacts). None of the 447 valid robustness and trade-off runs touched
+pose (our assumption for a charging dock with spring contacts). None of the 467 valid robustness and trade-off runs touched
 an obstacle or a wall (counted from MuJoCo contacts; the nominal batch and the demo were run before contacts were logged).
 
 ## Contents
@@ -149,6 +149,11 @@ Phases:
 5. **Servo.** Visual servoing: the docking reference is built in the marker frame from the docking EKF estimate and
    tracked by the same LQR; stop when the estimated distance to the dock reaches zero. If no marker measurement is
    accepted for 3 s, go back to Look.
+6. **Backup.** If, within 0.10 m of the dock (or when the stop rule fires), the docking EKF says the robot is more than
+   15 mm off the marker's centre line or 3 degrees off its direction (for example after a push), reverse straight back to
+   0.45 m from the dock and build a new docking reference (at most 3 retries). The sideways error cannot be removed in
+   the last centimetres, because the sideways mode has a 9.6 s time constant at docking speed (section 4), so backing
+   off is the only fix. The 15 mm, 3 degree, 0.10 m and 0.45 m values are our choices.
 
 ## Frames
 
@@ -404,7 +409,8 @@ marker, driven by the camera), a cubic Bezier curve joins the marker's normal li
 straight approach at 0.06 m/s to the dock (0.25 m from the marker face) and 0.30 m beyond. The same LQR tracks it on the
 docking EKF estimate, so the command comes from what the camera sees. The reference never slows to zero
 (controllability); the robot stops when the estimated distance to the dock falls below half a control step of travel.
-The station's position in the room is never needed.
+The station's position in the room is never needed. If the robot ends up off the centre line near the dock, phase
+Backup (section 3, phases) reverses and builds a new reference.
 
 ## 5. Integration and robustness
 
@@ -460,13 +466,14 @@ about it.
 | floor friction x0.3 | wheel and floor friction x 0.3 (slip) | 20 of 20 | 2.5 / 5.7 mm | 0.45 deg | 30.0 s | 6.8 mm | 2.8 | 3.52 |
 | push while navigating | kick at t = 8 s: +0.15 m/s, +1.0 rad/s | 20 of 20 | 2.0 / 5.7 mm | 0.47 deg | 29.8 s | 5.6 mm | 2.97 | 2.73 |
 | push while docking | kick 3 s into the servoing: +0.10 m/s, +0.8 rad/s | 20 of 20 | 2.3 / 5.3 mm | 0.47 deg | 29.8 s | 5.6 mm | 2.9 | 2.43 |
+| hard shove while docking | 3 s into the servoing: 1.0 m/s sideways and 3.0 rad/s turn | 20 of 20 | 2.4 / 4.8 mm | 0.44 deg | 39.5 s | 5.6 mm | 5.89 | 13.23 |
 | camera frames lost 50 percent | each camera frame dropped with probability 0.5 | 20 of 20 | 2.5 / 6.8 mm | 0.64 deg | 30.1 s | 5.6 mm | 2.9 | 2.1 |
 | LiDAR noise x2 | LiDAR range noise x 2 (the robot still assumes the datasheet) | 20 of 20 | 3.3 / 6.7 mm | 0.62 deg | 31.4 s | 23.4 mm | 35.04 | 2.63 |
 | start 3x further off | start placement error x 3 the prior the robot assumes | 19 of 19 (1 invalid) | 2.4 / 4.4 mm | 0.53 deg | 30.6 s | 5.8 mm | 3.7 | 3.77 |
 | combined | odometry x 2, wheels +-1 percent, friction x 0.5, LiDAR noise x 1.5, 30 percent frames lost | 20 of 20 | 2.7 / 4.5 mm | 0.78 deg | 30.2 s | 13.8 mm | 13.2 | 3.73 |
 | station 0.35 m off (limit test) | true station 0.35 m from the given position (robot assumes within 0.20 m) | 20 of 20 | 2.6 / 6.3 mm | 0.64 deg | 33.0 s | 13.0 mm | 46.48 | 2.52 |
 | station 0.5 m off (limit test) | 0.5 m off | 20 of 20 | 2.8 / 5.4 mm | 0.47 deg | 36.3 s | 24.2 mm | 125.37 | 5.6 |
-| station 0.7 m off (limit test) | 0.7 m off (outside the first camera view) | 20 of 20 | 3.6 / 6.4 mm | 2.47 deg | 39.7 s | 23.6 mm | 109.45 | 8.32 |
+| station 0.7 m off (limit test) | 0.7 m off (outside the first camera view) | 20 of 20 | 3.5 / 6.4 mm | 2.22 deg | 40.7 s | 23.6 mm | 112.53 | 8.28 |
 
 ![Robustness trials](results/robustness/robustness.png)
 
@@ -474,10 +481,20 @@ Every valid run docked, and no run touched an obstacle or a wall. The one invali
 seed 316) never started: the larger placement error put the robot inside the west wall, which the set-up check rejects.
 What the disturbances do change is the estimation, and that is where the design shows how it works:
 
-- **Odometry noise, wheel radius error, slip and pushes** barely move the docking error. The LiDAR fix bounds the
+- **Odometry noise, wheel radius error and slip** barely move the docking error. The LiDAR fix bounds the
   odometry drift every 0.2 s: the estimation error at the end of the trip only grows from 5.6 mm to 7.5 mm with four
   times the odometry noise. The navigation NEES rises to 3.65 to 3.85 with the wheel error and x 4 noise, because the
   process noise was tuned for the nominal odometry.
+- **The small kicks** (+0.15 m/s with +1.0 rad/s while navigating; +0.10 m/s with +0.8 rad/s while docking) hardly
+  disturb the robot: the wheel motors hold their speed, and in a test on room 3 the docking kick moved the robot 3 mm
+  and 0.5 degrees. They did not change the results, so they are a weak test.
+- **Hard shove while docking** (1.0 m/s sideways with a 3.0 rad/s turn, 3 s into the servoing) is a real disturbance:
+  on room 3 it moved the robot 94 mm and 7.5 degrees off its line in the next two seconds. The sideways error is the
+  one this robot cannot correct quickly (9.6 s time constant at docking speed), and without the Backup phase this run
+  ended 51 mm and 5.1 degrees from the dock, outside the tolerance. With it, 19 of the 20 runs backed off and retried
+  once (the other recovered on its own), and all 20 docked (median error 2.4 mm, max 4.8 mm), at the cost of about
+  10 s (39.5 s against 29.8 s). The filters register the shove, which they cannot predict: the navigation NEES is 5.9
+  and the docking NEES 13.2, both above 3 for this condition.
 - **Half the camera frames lost:** the docking EKF predicts on odometry between frames; accuracy is unchanged.
 - **LiDAR noise x 2** makes the navigation EKF inconsistent (NEES 35): the robot still assumes the datasheet noise, so
   its LiDAR R is four times too small, and its estimate at the end of the trip is 23 mm off instead of 6 mm. Docking is
@@ -485,9 +502,9 @@ What the disturbances do change is the estimation, and that is where the design 
   does not depend on the navigation estimate. This separation is the main reason the system is robust. The combined
   condition (NEES 13.2) is inconsistent for the same reason.
 - **Limit tests.** With the station 0.35, 0.5 and even 0.7 m from the given position the robot still docked 60 of 60:
-  at 0.7 m the marker is outside the first view and the search turn finds it, at the cost of time (39.7 s against
-  29.8 s) and a larger heading error (up to 2.5 degrees). The docking EKF becomes overconfident (NEES 5.6 and 8.3)
-  because its prior assumes the station within 0.20 m. The navigation EKF breaks down (NEES 46 to 125): the LiDAR fix
+  at 0.7 m the marker is outside the first view and the search turn finds it, at the cost of time (40.7 s against
+  29.8 s) and a larger heading error (up to 2.2 degrees). The docking EKF becomes overconfident (NEES 5.6 and 8.3)
+  because its prior assumes the station within 0.20 m. The navigation EKF breaks down (NEES 46 to 113): the LiDAR fix
   skips the east wall only within 0.40 m of the GIVEN station position, so a station further away has its front face,
   8 cm in front of the wall, matched as the wall. Checked directly on room 301 with the station 0.5 m off: the fix's
   x error had a mean of +26 mm with the skipped band where it is, and +1.7 mm with the band moved to the true station.
@@ -521,8 +538,8 @@ gives the filter a sudden error to correct.
 | 0.5 | 11.5 (overconfident) | 12.9 percent | 12.5 mm | 2.4 s | 4.4 mm |
 | **1.25 (design)** | **3.36** | **0.16 percent** | **6.6 mm** | **2.2 s** | **4.0 mm** |
 | 2.5 | 1.38 | 0.16 percent | 5.3 mm | 2.2 s | 5.5 mm |
-| 5 | 0.70 | 0 | 5.1 mm | 3.3 s | 6.5 mm |
-| 10 | 0.40 (underconfident) | 0 | 3.4 mm | 10.1 s | 9.7 mm |
+| 5 | 0.70 | 0 | 5.1 mm | 3.3 s | 6.4 mm |
+| 10 | 0.40 (underconfident) | 0 | 3.4 mm | 10.1 s | 9.4 mm |
 
 An overconfident filter (x 0.5) gates out 12.9 percent of good LiDAR fixes (the innovation looks too large for its small
 covariance), so after the push its error peaks highest. An underconfident one (x 10) leans on the odometry and takes 10 s to recover;
@@ -537,7 +554,7 @@ safety stop still run, placed with the drifting estimate).
 | | Median estimation error at the end of the trip | Mean RMS estimation error | RMS cross-track error (true) | Docked |
 |---|---|---|---|---|
 | **LiDAR fix on (design)** | **5.6 mm** | **9.7 mm** | **4.0 mm** | **12 of 12** |
-| odometry only | 141.5 mm | 123.0 mm | 70.2 mm | 11 of 12 |
+| odometry only | 141.5 mm | 124.0 mm | 69.7 mm | 11 of 12 |
 
 The camera at the end rescues 11 of the 12 odometry-only runs, because the docking EKF does not depend on the room
 frame. The failure (seed 408) shows why the fix matters beyond the estimate: 1.6 s in, the estimate was already
@@ -578,6 +595,9 @@ slow docking speed and to arcs.
   station is further away than assumed, the station face is matched as the wall and the navigation estimate is biased
   by about 26 mm in x (limit tests, section 5). Docking still succeeds because it does not use the room frame. A fix
   would be to also skip points that lie a station depth in front of the east wall.
+- **The sideways docking error is slow to correct.** The robot cannot move sideways, so after a disturbance near the
+  dock the only fix is to back off and retry (up to 3 times, thresholds our choices); a shove that arrives during the
+  last 10 cm of the approach costs about 10 s.
 - **The filters are only consistent for the noise they were tuned for.** With twice the LiDAR noise the navigation NEES
   is 35; the robot never adapts its noise model online.
 - **The LiDAR fix needs a known rectangular room** and walls the obstacles do not hide: at least 10 points on two
