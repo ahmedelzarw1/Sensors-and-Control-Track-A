@@ -1,6 +1,6 @@
 # 41014 Sensors and Control, Integrated Project, Track A
 
-**Group:** [group number] | **Members:** Ahmed El Zarw, Jeremy, Janith | **Track:** A, mobile robot, visual waypoint
+**Group:** 4 | **Members:** Ahmed El Zarw, Jeremy, Janith | **Track:** A, mobile robot, visual waypoint
 navigation | **Code:** this repository
 
 **A TurtleBot3 Burger in MuJoCo crosses a room with obstacles from a randomised start point to a randomised charging
