@@ -10,6 +10,8 @@ Conditions (all values are our choices, picked to be clearly beyond the nominal 
 - floor friction x0.3              wheel and floor sliding friction cut to 30 percent (wheel slip)
 - push while navigating            velocity kick at t = 8 s: +0.15 m/s forward and +1.0 rad/s turn
 - push while docking               the same kind of kick (+0.10 m/s, +0.8 rad/s) 3 s into the visual servoing
+- hard shove while docking         3 s into the visual servoing: 1.0 m/s sideways and 3.0 rad/s turn (moves the robot
+                                   about 9 cm and 7 degrees off its line; the robot has to back off and retry)
 - camera frames lost 50 percent    every camera frame is dropped with probability 0.5
 - LiDAR noise x2                   range noise twice the datasheet values the robot assumes
 - start 3x further off             start placement error three times the prior standard deviation the robot assumes
@@ -57,6 +59,7 @@ CONDITIONS = {
     "floor friction x0.3": dict(friction_scale=0.3),
     "push while navigating": dict(impulses=((8.0, 0.15, 1.0),)),
     "push while docking": dict(servo_push=(3.0, 0.10, 0.8)),
+    "hard shove while docking": dict(servo_push=(3.0, 0.0, 3.0, 1.0)),
     "camera frames lost 50 percent": dict(marker_dropout=0.5),
     "LiDAR noise x2": dict(lidar_noise_scale=2.0),
     "start 3x further off": dict(start_offset_scale=3.0),

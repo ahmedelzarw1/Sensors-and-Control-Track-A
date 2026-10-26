@@ -107,7 +107,7 @@ class DemoVideo:
         self.true_tri.set_data(tt[:, 0], tt[:, 1])
         self.est_tri.set_data(te[:, 0], te[:, 1])
         err = np.hypot(x[-1] - xh[-1], y[-1] - yh[-1])
-        if log["phase"][-1] in ("look", "servo", "done"):
+        if log["phase"][-1] in ("look", "servo", "backup", "done"):
             cam = "accepted" if log["accepted"][-1] else ("gated out" if log["detected"][-1] else "not seen")
         else:
             cam = "off (navigating with the LiDAR)"

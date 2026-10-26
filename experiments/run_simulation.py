@@ -47,7 +47,8 @@ class EpisodeConfig:
     wheel_scale: tuple = (1.0, 1.0)             # true wheel radius / radius the software believes (left, right)
     friction_scale: float = 1.0                 # multiplies the sliding friction of the wheels and the floor
     impulses: tuple = ()                        # ((t, dv_forward m/s, dw rad/s), ...) applied to the true body
-    servo_push: Optional[tuple] = None          # (s after visual servoing starts, dv m/s, dw rad/s): a push while docking
+    servo_push: Optional[tuple] = None          # (s after visual servoing starts, dv m/s, dw rad/s[, sideways m/s]):
+                                                # a push while docking
     start_offset_scale: float = 1.0             # true start error = this times the prior std the robot assumes
     lidar_noise_scale: float = 1.0              # true LiDAR noise = this times the datasheet noise the robot assumes
     lidar_fix: bool = True                      # False: the navigation EKF gets no LiDAR position fix (odometry only)
@@ -89,12 +90,12 @@ def _apply_conditions(sim: TB3Sim, cfg: EpisodeConfig) -> None:
             m.geom_friction[wheel_collision_geom(m, b)][0] *= cfg.friction_scale
 
 
-def _apply_impulse(sim: TB3Sim, dv: float, dw: float) -> None:
-    """Add a velocity change to the free joint of the robot (a push)."""
+def _apply_impulse(sim: TB3Sim, dv: float, dw: float, dside: float = 0.0) -> None:
+    """Add a velocity change to the free joint of the robot (a push): dv forward, dside to the left (m/s), dw turn."""
     th = true_pose(sim)[2]
     dof = int(sim.model.jnt_dofadr[sim.model.body_jntadr[sim._foot]])  # noqa: SLF001
-    sim.data.qvel[dof + 0] += dv * np.cos(th)
-    sim.data.qvel[dof + 1] += dv * np.sin(th)
+    sim.data.qvel[dof + 0] += dv * np.cos(th) - dside * np.sin(th)
+    sim.data.qvel[dof + 1] += dv * np.sin(th) + dside * np.cos(th)
     sim.data.qvel[dof + 5] += dw
 
 
@@ -233,7 +234,7 @@ def run_episode(cfg: EpisodeConfig, frame_hook=None, step_hook: Optional[Callabl
         if servo_start is None and mission.phase == Phase.SERVO:
             servo_start = t
         if cfg.servo_push is not None and servo_start is not None and t >= servo_start + cfg.servo_push[0]:
-            _apply_impulse(sim, cfg.servo_push[1], cfg.servo_push[2])
+            _apply_impulse(sim, *cfg.servo_push[1:])
             cfg = replace(cfg, servo_push=None)   # once
         obs = sim.step(cmd)
         # Collision count (evaluation only): steps on which the robot touches an obstacle or a wall. The charging station

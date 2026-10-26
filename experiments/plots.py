@@ -186,7 +186,7 @@ def write_csv(res, path: Path) -> None:
 
 def _camera_span(ax, L):
     """Shade the end of the run, where the camera is on (look and servo)."""
-    cam = np.isin(L["phase"], ["look", "servo"])
+    cam = np.isin(L["phase"], ["look", "servo", "backup"])
     if cam.any():
         t = L["t"]
         ax.axvspan(t[cam][0], t[cam][-1], color="g", alpha=0.08, lw=0)

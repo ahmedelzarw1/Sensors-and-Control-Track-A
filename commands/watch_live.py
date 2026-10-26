@@ -75,7 +75,7 @@ def main() -> None:
         est = info.get("est")
         if est is not None:
             meas = info.get("meas")
-            if info["phase"] in ("look", "servo", "done"):
+            if info["phase"] in ("look", "servo", "backup", "done"):
                 marker = (f"{meas.range_bearing[0]:.2f} m, {'used' if info['accepted'] else 'rejected'}"
                           if meas is not None else "not seen")
             else:

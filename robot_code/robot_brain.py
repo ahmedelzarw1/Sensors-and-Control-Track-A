@@ -25,6 +25,11 @@ Phases
           search by turning) until the camera has given servo_fixes accepted marker measurements.
 - SERVO:  visual servoing: LQR tracking of the docking reference built in the marker frame, on the docking EKF
           estimate; stop by the stop rule. If the marker is lost for dock_fix_timeout, back to LOOK.
+- BACKUP: retry the docking. If the robot is close to the dock (or the stop rule fires) while the docking EKF says it is
+          off the marker's centre line by more than dock_retry_lateral or dock_retry_heading (for example after a
+          push), reverse straight back to dock_backup_to from the dock, then build a new docking reference (at most
+          max_dock_retries times). The sideways error cannot be removed in the last few centimetres (the slow mode of
+          the tracking model at docking speed has a 9.6 s time constant), so backing off is the only way to fix it.
 - DONE / FAILED.
 """
 from __future__ import annotations
@@ -38,8 +43,8 @@ import numpy as np
 from robot_code import room_map as km
 from robot_code.lqr_controller import LQRTracker
 from robot_code.lqr_controller import SlewRateLimiter
-from robot_code.docking import (MarkerSearch, docking_reference, join_point, marker_frame_prior, remaining_distance,
-                                should_stop)
+from robot_code.docking import (MarkerSearch, dock_frame_error, docking_reference, join_point, marker_frame_prior,
+                                remaining_distance, should_stop)
 from robot_code.kalman_filter import EKF
 from robot_code.lidar import LidarMap, front_blocked, front_distance, wall_fix
 from robot_code.unicycle_model import tracking_error
@@ -54,6 +59,7 @@ class Phase(str, Enum):
     TRACK = "track"
     LOOK = "look"
     SERVO = "servo"
+    BACKUP = "backup"
     DONE = "done"
     FAILED = "failed"
 
@@ -70,6 +76,12 @@ class MissionConfig:
     dock_align_max: float = np.deg2rad(60.0)  # larger heading error to the join point is fixed by turning first
     dock_fix_timeout: float = 3.0     # s without an accepted marker fix while servoing: stop and look again
     servo_fixes: int = 3              # accepted marker fixes before the visual servoing starts
+    dock_retry_lateral: float = 0.015         # m, estimated offset from the centre line that triggers a retry
+    dock_retry_heading: float = np.deg2rad(3.0)
+    dock_retry_near: float = 0.10             # m to go, from where the offset is checked
+    dock_backup_to: float = 0.45              # m from the dock pose, where the retry starts again
+    dock_backup_speed: float = 0.08           # m/s
+    max_dock_retries: int = 3
     look_timeout: float = 30.0        # s looking for the marker before giving up
     timeout: float = 240.0            # s
     max_replans: int = 12
@@ -108,6 +120,7 @@ class DockingMission:
         self.after_align = Phase.TRACK
         self.search = MarkerSearch()
         self.n_replans = 0
+        self.n_dock_retries = 0
         self.events: list[tuple[float, str]] = []
         self.plans: list = []
         self.info: dict = {}
@@ -187,7 +200,7 @@ class DockingMission:
             self.lidar_map.add_scan(lidar, est)
         # 3. Camera, only at the end of the trip.
         meas, accepted = None, False
-        if self.phase in (Phase.LOOK, Phase.SERVO) and image is not None:
+        if self.phase in (Phase.LOOK, Phase.SERVO, Phase.BACKUP) and image is not None:
             meas = self.sensor.measure(image, t)
             accepted = self.dock_ekf.update_marker(meas) if meas is not None else False
             if accepted:
@@ -306,9 +319,26 @@ class DockingMission:
                 self.ref, self.k = docking_reference(est_m.x_hat, self.cfg.Ts), 0
             cmd = self.tracker.command(est_m, self.ref, self.k)
             self.k += 1
-            if should_stop(est_m, cmd.v, self.cfg.Ts) or self.k >= len(self.ref):
+            stop = should_stop(est_m, cmd.v, self.cfg.Ts) or self.k >= len(self.ref)
+            along, lateral, heading = dock_frame_error(est_m.x_hat)
+            off_line = abs(lateral) > self.cfg.dock_retry_lateral or abs(heading) > self.cfg.dock_retry_heading
+            if ((stop or along < self.cfg.dock_retry_near) and off_line
+                    and self.n_dock_retries < self.cfg.max_dock_retries):
+                self.n_dock_retries += 1
+                self._event(f"off the centre line near the dock ({1000 * lateral:.0f} mm, "
+                            f"{np.rad2deg(heading):.1f} deg): backing off to retry ({self.n_dock_retries})")
+                self.phase, self.ref = Phase.BACKUP, None
+                return ControlCmd(-self.cfg.dock_backup_speed, 0.0)
+            if stop:
                 self._event(f"stop rule: estimated distance to go {remaining_distance(est_m):.3f} m")
                 self.phase = Phase.DONE
                 return ControlCmd(0.0, 0.0)
             return cmd
+
+        if self.phase == Phase.BACKUP:
+            est_m = self.dock_ekf.estimate()
+            if remaining_distance(est_m) < self.cfg.dock_backup_to:
+                return ControlCmd(-self.cfg.dock_backup_speed, 0.0)
+            self.phase = Phase.SERVO      # the next step builds a new docking reference from here
+            return ControlCmd(0.0, 0.0)
         return ControlCmd(0.0, 0.0)
