@@ -4,6 +4,8 @@ its position only to within 0.20 m) and random obstacles in between, checked for
     python commands/run_random_rooms.py                       # one random room (a new seed each time, printed)
     python commands/run_random_rooms.py --seed 7              # reproduce room 7 exactly
     python commands/run_random_rooms.py --seed 0 --count 30   # 30 rooms in a row, with a success rate and its interval
+    python commands/run_random_rooms.py --seed 3 --condition "push while docking"   # a disturbed run (robustness
+                                                              # conditions of experiments/robustness_trials.py)
 
 While it runs, the terminal works like a serial monitor: the randomised room and the checks it passed, then a line
 twice a second with what the robot is calculating (EKF estimate, uncertainty, commands, LiDAR fix, safety-stop
@@ -39,6 +41,7 @@ from experiments.plots import draw_map, robot_triangle  # noqa: E402
 from experiments.plots import episode_metrics, plot_episode, write_csv  # noqa: E402
 from experiments.run_simulation import EpisodeConfig, run_episode  # noqa: E402
 from experiments.video import DemoVideo  # noqa: E402
+from experiments.robustness_trials import CONDITIONS  # noqa: E402
 from robot_code import room_map as km  # noqa: E402
 from robot_code import random_room as rl  # noqa: E402
 from robot_code.path_planning import known_map_grid  # noqa: E402
@@ -94,8 +97,10 @@ def plot_layout(layout: km.Layout, report, path: Path) -> None:
 
 
 def run_one(seed: int, args) -> dict:
-    layout, report = rl.sample_layout(seed)
-    out = OUT / f"seed_{seed}"
+    kw = dict(CONDITIONS[args.condition])
+    layout, report = rl.sample_layout(seed, hint_offset=kw.pop("hint_offset", None))
+    slug = "" if args.condition == "nominal" else "_" + args.condition.split(" (")[0].replace(" ", "_")
+    out = OUT / f"seed_{seed}{slug}"
     out.mkdir(parents=True, exist_ok=True)
     # The monitor output always goes to monitor.txt, and to the terminal unless --quiet.
     log_file = open(out / "monitor.txt", "w")
@@ -108,10 +113,11 @@ def run_one(seed: int, args) -> dict:
     photos = None if args.no_photos else PhotoTaker(out / "photos", layout=layout)
     if photos:
         hooks.append(photos)
-    video = None if args.no_video else DemoVideo(out / "demo.mp4", title=f"random room, seed {seed}", layout=layout)
+    video = None if args.no_video else DemoVideo(out / "demo.mp4", title=f"random room, seed {seed}" + ("" if args.condition == "nominal" else f", {args.condition}"),
+                                                 layout=layout)
     if video:
         hooks.append(video)
-    res = run_episode(EpisodeConfig(layout=layout, seed=seed), frame_hook=hooks)
+    res = run_episode(EpisodeConfig(layout=layout, seed=seed, **kw), frame_hook=hooks)
     if video:
         video.close()
     sheet = photos.finish(res) if photos else None
@@ -136,6 +142,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--seed", type=int, help="layout seed (default: a new random seed, printed)")
     ap.add_argument("--count", type=int, default=1, help="number of consecutive seeds to run")
+    ap.add_argument("--condition", choices=list(CONDITIONS), default="nominal",
+                    help="a disturbance or noise condition from experiments/robustness_trials.py")
     ap.add_argument("--every", type=int, default=5, help="monitor line every N control steps (5 = twice a second)")
     ap.add_argument("--quiet", action="store_true", help="no serial monitor output")
     ap.add_argument("--no-video", action="store_true")

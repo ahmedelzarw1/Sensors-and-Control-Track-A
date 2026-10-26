@@ -6,6 +6,7 @@ Linux:  python commands/watch_live.py --random
 Options: --random [SEED] (a random room, see robot_code/random_room.py; without SEED a new one is drawn),
          --start <point> (the fixed demo room from a start point, see robot_code/room_map.py), --seed N,
          --speed 2.0 (faster than real time),
+         --condition "push while docking" (a disturbance or noise condition, see experiments/robustness_trials.py),
          --monitor (print what the robot calculates, serial-monitor style; always on with --random),
          --no-panel (hide the live video panel), --panel-size 0.5 (its width as a fraction of the window),
          --record (also save the video panel to results/live/<run>/demo.mp4).
@@ -33,6 +34,7 @@ import numpy as np  # noqa: E402
 from experiments.serial_monitor import SerialMonitor, print_layout  # noqa: E402
 from experiments.video import DemoVideo  # noqa: E402
 from experiments.run_simulation import EpisodeConfig, run_episode  # noqa: E402
+from experiments.robustness_trials import CONDITIONS  # noqa: E402
 from robot_code import room_map as km  # noqa: E402
 from robot_code import random_room as rl  # noqa: E402
 
@@ -47,10 +49,12 @@ def main() -> None:
     ap.add_argument("--no-panel", action="store_true", help="hide the live video panel")
     ap.add_argument("--panel-size", type=float, default=0.5, help="panel width as a fraction of the window width")
     ap.add_argument("--record", action="store_true", help="also save the video panel as an MP4")
+    ap.add_argument("--condition", choices=list(CONDITIONS), default="nominal",
+                    help="a disturbance or noise condition from experiments/robustness_trials.py")
     args = ap.parse_args()
     if args.random is not None:
         seed = args.random if args.random >= 0 else int(time.time()) % 100000
-        layout, report = rl.sample_layout(seed)
+        layout, report = rl.sample_layout(seed, hint_offset=CONDITIONS[args.condition].get("hint_offset"))
         args.seed, args.monitor = seed, True
         print_layout(layout, report)
     else:
@@ -93,6 +97,8 @@ def main() -> None:
         name = f"random_{args.seed}" if args.random is not None else f"{args.start}_{args.seed}"
         path = ROOT / "results" / "live" / f"{name}_run{state['runs']}" / "demo.mp4" if args.record else None
         title = f"random room, seed {args.seed}" if args.random is not None else f"demo room from '{args.start}' (seed {args.seed})"
+        if args.condition != "nominal":
+            title += f", {args.condition}"
         state["panel"] = DemoVideo(path, title=title, layout=layout)
         return state["panel"]
 
@@ -136,7 +142,10 @@ def main() -> None:
             v.close()
         state["viewer"], state["phase"] = None, None
 
-    cfg = EpisodeConfig(seed=args.seed, layout=layout)
+    kw = {k: v for k, v in CONDITIONS[args.condition].items() if k != "hint_offset"}
+    if args.condition != "nominal":
+        print(f"condition: {args.condition} (the robot is not told)")
+    cfg = EpisodeConfig(seed=args.seed, layout=layout, **kw)
     try:
         while True:
             try:

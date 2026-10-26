@@ -59,7 +59,8 @@ python commands/run_random_rooms.py --seed 3       # random room 3: video, photo
 python commands/run_demo.py                        # the fixed demo room from its three start points
 ```
 
-`watch_live.py --random 7` replays room 7; `--start west_north` uses the fixed demo room. In the viewer, Reset (or
+`watch_live.py --random 7` replays room 7; `--start west_north` uses the fixed demo room; `--condition "push while
+docking"` (or any condition of section 5) adds a disturbance the robot is not told about; `--record` saves the video. In the viewer, Reset (or
 Backspace) restarts the whole run. Tested on macOS (Apple silicon) with Python 3.12 and MuJoCo 3.15.0 using MuJoCo's
 default rendering backend. On Linux without a display, set `MUJOCO_GL=egl` (or `osmesa`) first; the Linux backends have
 not been tested.
