@@ -23,7 +23,7 @@
   "dynamic_inflation": [
     1.0,
     1.0,
-    2.2523766262805656
+    2.4143312260854635
   ],
-  "dynamic_source": "experiments/calibration/camera_noise_while_driving.py, 15 of 15 docking episodes successful and used, 2498 measurements (44 ambiguity flips excluded)"
+  "dynamic_source": "experiments/camera_noise_while_driving.py, random rooms seeds 100 to 114: 15 of 15 docking episodes successful and used, 1333 measurements (0 ambiguity flips excluded)"
 }

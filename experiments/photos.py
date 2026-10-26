@@ -1,6 +1,7 @@
 """Camera taking photos: snapshots of the robot camera and of the room at the key moments of a run.
 
-A photo is saved at the start, when the marker is first detected, at every phase change, and at the end. Each photo
+A photo is saved at the start, when the marker is first detected (the camera is only on at the end), at every phase
+change, and at the end. Each photo
 is the annotated robot camera image (marker outline, pose axes, measured range) next to a top-down view of the room
 with the true path, the estimated path and the 3 sigma ellipse at that moment. contact_sheet.png puts them all on one
 page.
@@ -17,7 +18,7 @@ import numpy as np  # noqa: E402
 
 from experiments.plots import draw_map, ellipse_points, lidar_map_rgba, robot_triangle  # noqa: E402
 from robot_code import room_map as km  # noqa: E402
-from experiments.video import annotate_camera  # noqa: E402
+from experiments.video import annotate_camera, reference_in_room  # noqa: E402
 
 
 class PhotoTaker:
@@ -43,9 +44,10 @@ class PhotoTaker:
             ax.set_xlim(km.ROOM_X_MIN - 0.1, km.ROOM_X_MAX + 0.1)
             ax.set_ylim(km.ROOM_Y_MIN - 0.1, km.ROOM_Y_MAX + 0.1)
         ax.plot(log["x"], log["y"], "b", lw=1.5, label="true path")
-        ax.plot(log["xh"], log["yh"], "r", lw=1.0, label="EKF estimate")
+        ax.plot(log["xh"], log["yh"], "r", lw=1.0, label="navigation EKF")
+        ax.plot(log["xd"], log["yd"], "m", lw=1.0, label="docking EKF")
         if mission.ref is not None:
-            ax.plot(mission.ref.x, mission.ref.y, color="0.55", lw=1, ls="--", label="planned reference")
+            ax.plot(*reference_in_room(mission, log), color="0.55", lw=1, ls="--", label="planned reference")
         P = np.array([[log["Pxx"][-1], log["Pxy"][-1]], [log["Pxy"][-1], log["Pyy"][-1]]])
         e = ellipse_points([log["xh"][-1], log["yh"][-1]], P)
         ax.plot(e[:, 0], e[:, 1], "r", lw=0.8)

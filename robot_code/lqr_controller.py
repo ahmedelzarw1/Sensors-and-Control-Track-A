@@ -99,6 +99,7 @@ class LQRTracker:
         self._K_fixed = design_gain(v_nom, 0.0, Ts, Q, R) if mode == "fixed" else None
         self._K_tv = None
         self._tv_for = None
+        self.last_du = None   # the feedback part of the last command (logged for the evaluation)
 
     def gain(self, ref: ReferenceTrajectory, k: int) -> np.ndarray:
         if self.mode == "fixed":
@@ -114,6 +115,7 @@ class LQRTracker:
     def command(self, est: StateEstimate, ref: ReferenceTrajectory, k: int) -> ControlCmd:
         e = tracking_error(est.x_hat, ref.pose(k))
         du = -self.gain(ref, k) @ e
+        self.last_du = du
         u_ref = ref.vel(k)
         v = float(np.clip(u_ref[0] + du[0], -self.limits.v_max, self.limits.v_max))
         w = float(np.clip(u_ref[1] + du[1], -self.limits.omega_max, self.limits.omega_max))

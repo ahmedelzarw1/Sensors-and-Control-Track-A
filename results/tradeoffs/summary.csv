@@ -1,0 +1,15 @@
+study,value,runs,docked,median_dock_err_mm,mean_rms_feedback_v_mm_s,mean_rms_feedback_w,mean_rms_turn_rate_change,mean_rms_cross_track_mm,mean_sat_fraction,mean_nees,mean_rms_est_err_mm,median_est_err_end_of_trip_mm,median_push_peak_mm,median_push_half_recovery_s,median_time_s,runs_with_collision,failures
+lqr_r_scale,0.25,12,12,3.61,4.44,0.0686,0.682,4.87,0.0,3.255,9.66,6.0,nan,nan,30.1,0,
+lqr_r_scale,1.0,12,12,2.29,2.83,0.0363,0.628,3.96,0.0,3.337,9.73,5.6,nan,nan,30.0,0,
+lqr_r_scale,4.0,12,12,2.38,2.02,0.0254,0.585,3.93,0.0,3.366,9.84,5.7,nan,nan,30.1,0,
+lqr_r_scale,16.0,12,12,2.77,1.46,0.0162,0.56,5.21,0.0,3.327,9.83,6.2,nan,nan,30.1,0,
+lidar_r_scale,0.5,12,12,2.56,nan,nan,nan,4.38,0.0,11.54,11.01,6.5,12.5,2.4,30.2,0,
+lidar_r_scale,1.25,12,12,2.15,nan,nan,nan,3.97,0.0,3.361,9.78,5.5,6.6,2.2,30.0,0,
+lidar_r_scale,2.5,12,12,3.17,nan,nan,nan,5.46,0.0,1.376,9.34,5.0,5.3,2.2,30.1,0,
+lidar_r_scale,5.0,12,12,3.06,nan,nan,nan,6.5,0.0,0.704,9.14,4.4,5.1,3.3,30.1,0,
+lidar_r_scale,10.0,12,12,2.11,nan,nan,nan,9.69,0.0,0.399,9.72,4.6,3.4,10.1,29.9,0,
+lidar_fix,True,12,12,2.29,nan,nan,nan,3.96,0.0,3.337,9.73,5.6,nan,nan,30.0,0,
+lidar_fix,False,12,11,1.87,nan,nan,nan,70.15,0.0,2.589,122.99,141.5,nan,nan,30.5,0,seed 408: failed
+tracker_mode,fixed,12,12,1.56,2.67,0.0437,0.647,4.13,0.0,3.266,9.64,6.1,nan,nan,30.0,0,
+tracker_mode,scheduled,12,12,2.29,2.83,0.0363,0.628,3.96,0.0,3.337,9.73,5.6,nan,nan,30.0,0,
+tracker_mode,tv,12,12,4.82,3.04,0.0434,0.665,5.25,0.0,3.276,9.68,5.3,nan,nan,30.2,0,

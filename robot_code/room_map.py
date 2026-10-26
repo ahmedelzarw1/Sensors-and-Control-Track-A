@@ -1,9 +1,8 @@
-"""The known map of the Track A room: walls, obstacles, charging station and ArUco marker.
+"""The Track A room: walls, obstacles, charging station and ArUco marker, and the start and end points of a run.
 
-This is CONFIGURATION, not ground truth. A real robot would be given the same information as a floor plan and a
-surveyed marker position. The pipeline (planner, estimator, docking) may read it. The scene generator
-(commands/build_mujoco_files.py) builds the MuJoCo room from the same numbers, so the map and the simulated world agree
-by construction. Nothing here says where the robot is.
+What the robot is told (like a floor plan handed to a real robot): the walls, its start point, and roughly where the
+charging station is. What it is NOT told: the obstacles (it finds them with the LiDAR) and the exact station position
+(it finds the marker with the camera at the end). The simulator builds the MuJoCo room from the same numbers.
 
 Frames: world frame W (MuJoCo world, z up). Marker frame M: origin at the marker centre, x along the outward normal of
 the marker face, z up, y = z cross x (to the right of a viewer who faces the marker).
@@ -74,7 +73,11 @@ OBSTACLES = (
 )
 
 # ------------------------------------------------------------------ charging station and marker
-DOCK_Y = 0.40                      # station centre line on the east wall
+# The station stands against the east wall. Its position along the wall (dock_y) changes from room to room, and the
+# robot is only told it approximately (Layout.dock_hint_y, within DOCK_HINT_ERROR). The camera finds the exact marker
+# at the end of the trip.
+DOCK_Y = 0.40                      # station centre line in the fixed demo room (mujoco_files/room.xml)
+DOCK_HINT_ERROR = 0.20             # m, the true station is within this distance of the position given (assumption)
 STATION_DEPTH = 0.08               # station body protrudes this far from the wall (along -x)
 STATION_HALF_WIDTH = 0.15
 STATION_HEIGHT = 0.26
@@ -86,69 +89,72 @@ MARKER_BITS = 4                    # 4 x 4 data cells plus a one-cell black bord
 MARKER_WHITE_BORDER = MARKER_SIZE / (MARKER_BITS + 2)  # one cell of white quiet zone on each side
 MARKER_PLATE_THICKNESS = 0.004
 MARKER_HEIGHT = 0.11               # centre height, equal to the camera height so the marker is centred vertically
-
-STATION_FRONT_X = ROOM_X_MAX - STATION_DEPTH
-# Marker pose in W: (x, y, z, yaw). The face points into the room (normal along -x), so yaw = pi.
-MARKER_POSE_W = np.array([STATION_FRONT_X - MARKER_PLATE_THICKNESS, DOCK_Y, np.pi])
 MARKER_Z = MARKER_HEIGHT
+STATION_FRONT_X = ROOM_X_MAX - STATION_DEPTH
+
+
+def marker_pose(dock_y: float) -> np.ndarray:
+    """Marker pose in W (x, y, yaw) for a station at dock_y. The face points into the room (normal along -x)."""
+    return np.array([STATION_FRONT_X - MARKER_PLATE_THICKNESS, dock_y, np.pi])
+
 
 # ------------------------------------------------------------------ docking geometry
 # Distances are measured from the marker face to the base frame origin along the marker normal.
 DOCK_STANDOFF = 0.25               # final docked distance (camera is then about 0.19 m from the marker)
-PRE_DOCK_DISTANCE = 0.90           # where the planner hands over to the docking trajectory
+APPROACH_DISTANCE = 0.90           # the end point of the trip: where the camera takes over (visual servoing)
 
 
-def pose_in_front_of_marker(distance: float) -> np.ndarray:
-    """Robot pose at a given distance in front of the marker, facing the marker."""
-    mx, my, myaw = MARKER_POSE_W
+def pose_in_front_of_marker(distance: float, dock_y: float) -> np.ndarray:
+    """Robot pose at a given distance in front of the marker of a station at dock_y, facing the marker."""
+    mx, my, myaw = marker_pose(dock_y)
     n = np.array([np.cos(myaw), np.sin(myaw)])     # outward normal
     p = np.array([mx, my]) + distance * n
     return np.array([p[0], p[1], float(np.arctan2(-n[1], -n[0]))])
 
 
-DOCK_POSE = pose_in_front_of_marker(DOCK_STANDOFF)
-PRE_DOCK_POSE = pose_in_front_of_marker(PRE_DOCK_DISTANCE)
+def dock_pose(dock_y: float) -> np.ndarray:
+    return pose_in_front_of_marker(DOCK_STANDOFF, dock_y)
+
+
+def approach_pose(dock_y: float) -> np.ndarray:
+    return pose_in_front_of_marker(APPROACH_DISTANCE, dock_y)
+
+
+# The dock pose in the marker frame M is the same in every room: DOCK_STANDOFF out along the normal, facing the marker.
+DOCK_POSE_M = np.array([DOCK_STANDOFF, 0.0, np.pi])
 
 # ------------------------------------------------------------------ robot footprint
 # Radius of the circle about the base frame origin that encloses the robot's planar footprint: the largest planar
 # distance of any collision mesh vertex of the ROBOTIS Burger (a rear corner of the chassis, at about (-0.095, -0.043) m
-# in B) is 0.1045 m. Recomputed from the model in tests/test_simulated_robot.py.
+# in B) is 0.1045 m.
 ROBOT_RADIUS = 0.105
 
-# ------------------------------------------------------------------ start poses
-# Nominal start poses: the robot is placed by hand on a marked start pad. The pad position is known to the robot as a
-# prior with the standard deviations below (assumption: hand placement within a few centimetres and degrees).
-# START_POSES all have a line of sight to the marker within 3.1 m (checked by marker_line_of_sight, see
-# tests/test_scene.py), so the robot can fix its pose before it drives. Each needs a path around at least one
-# obstacle, and "centre" starts facing away from the marker so the localisation search turn is exercised.
-START_POSES = {
-    "north_west": np.array([-0.60, 1.25, -0.3]),
-    "south_west": np.array([-0.70, -1.20, 0.3]),
-    "south": np.array([0.20, -1.15, 1.2]),
-    "north": np.array([0.40, 1.15, -0.3]),
-    "centre": np.array([-0.45, -0.45, 2.5]),
+# ------------------------------------------------------------------ start points
+# The robot starts at the west end of the room and the charging station is at the east end. The start point is placed
+# by hand, so the robot knows it as a prior with the standard deviations below (assumption: hand placement within a few
+# centimetres and degrees).
+START_X = ROOM_X_MIN + 0.35
+START_POINTS = {
+    "west_south": np.array([START_X, -1.00, 0.0]),
+    "west_centre": np.array([START_X, 0.00, 0.0]),
+    "west_north": np.array([START_X, 1.00, 0.0]),
 }
-# Start poses WITHOUT a line of sight to the marker (occluded by the central block or out of range). The robot must
-# drive about 2 m on odometry and the start prior alone. Used as a separate, harder evaluation condition.
-HIDDEN_START_POSES = {
-    "far_west": np.array([-1.55, -0.10, 0.0]),
-    "far_north_west": np.array([-1.60, 0.30, -0.4]),
-}
-ALL_START_POSES = {**START_POSES, **HIDDEN_START_POSES}
 START_PRIOR_SIGMA = np.array([0.05, 0.05, np.deg2rad(3.0)])
 
 
 # ------------------------------------------------------------------ layouts
 @dataclass(frozen=True)
 class Layout:
-    """One arrangement of the room: the obstacles and the start pad.
+    """One arrangement of the room: the obstacles, the start point and the charging station.
 
-    The walls, charging station and marker are the same in every layout. The obstacles are given to the robot as its
-    map; the start pad is given to it as the prior on its start pose (the true start is the pad plus a random
-    placement error, applied by the simulator). A layout is configuration, not ground truth.
+    Given to the robot: the start point (the prior of its EKF) and dock_hint_y (the approximate station position).
+    Not given to the robot: the obstacles (the LiDAR finds them) and the true dock_y (the camera finds the marker). The
+    simulator builds the room from all of it, and the evaluation measures the docking error against the true dock.
     """
     obstacles: tuple
-    start: np.ndarray = field(default_factory=lambda: START_POSES["centre"].copy())
+    start: np.ndarray = field(default_factory=lambda: START_POINTS["west_centre"].copy())
+    dock_y: float = DOCK_Y
+    dock_hint_y: float = DOCK_Y
     name: str = "default"
     seed: Optional[int] = None
 
@@ -161,39 +167,22 @@ class Layout:
             else:
                 d.update(type="cylinder", radius=ob.radius)
             obs.append(d)
-        return {"name": self.name, "seed": self.seed, "start": [float(v) for v in self.start], "obstacles": obs}
+        return {"name": self.name, "seed": self.seed, "start": [float(v) for v in self.start],
+                "dock_y": float(self.dock_y), "dock_hint_y": float(self.dock_hint_y), "obstacles": obs}
 
 
-def default_layout(start: str = "centre") -> Layout:
-    """The fixed room used for the demo, with one of the named start pads."""
-    return Layout(OBSTACLES, ALL_START_POSES[start].copy(), name=f"default/{start}")
+def default_layout(start: str = "west_centre") -> Layout:
+    """The fixed demo room, with one of the start points. The robot is told the station is 0.15 m from where it is."""
+    return Layout(OBSTACLES, START_POINTS[start].copy(), dock_y=DOCK_Y, dock_hint_y=DOCK_Y - 0.15,
+                  name=f"default/{start}")
 
 
-def station_footprint() -> Box:
-    return Box("charging_station", ROOM_X_MAX - STATION_DEPTH / 2, DOCK_Y, STATION_DEPTH / 2,
+def station_footprint(dock_y: float = DOCK_Y) -> Box:
+    return Box("charging_station", ROOM_X_MAX - STATION_DEPTH / 2, dock_y, STATION_DEPTH / 2,
                STATION_HALF_WIDTH, STATION_HEIGHT)
 
 
 def obstacle_footprints(layout: Optional[Layout] = None) -> list:
     """All static obstacles in the room as Box and Cylinder footprints, including the charging station."""
-    obstacles = OBSTACLES if layout is None else layout.obstacles
-    return list(obstacles) + [station_footprint()]
-
-
-def segment_hits_obstacle(a, b, n: int = 200, layout: Optional[Layout] = None) -> bool:
-    """True if the straight segment a-b (planar) crosses any obstacle footprint or the charging station body.
-    All obstacles are taller than the camera, so this is also the camera line-of-sight test on the known map."""
-    t = np.linspace(0.0, 1.0, n)[:, None]
-    P = np.asarray(a, float)[:2] * (1 - t) + np.asarray(b, float)[:2] * t
-    return any(np.any(footprint_contains(ob, P[:, 0], P[:, 1])) for ob in obstacle_footprints(layout))
-
-
-def marker_line_of_sight(xy, layout: Optional[Layout] = None) -> bool:
-    """True if the marker centre is visible from xy on the known map (in front of the marker and not occluded).
-    The end point is moved 1 cm in front of the marker face so the station body itself does not count."""
-    mx, my, myaw = MARKER_POSE_W
-    n = np.array([np.cos(myaw), np.sin(myaw)])
-    front = np.array([mx, my]) + 0.01 * n
-    if (np.asarray(xy, float)[:2] - front) @ n <= 0.0:
-        return False
-    return not segment_hits_obstacle(xy, front, layout=layout)
+    layout = layout if layout is not None else default_layout()
+    return list(layout.obstacles) + [station_footprint(layout.dock_y)]

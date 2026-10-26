@@ -1,0 +1,71 @@
+{
+  "dynamic_inflation": [
+    1.0,
+    1.0,
+    2.4143312260854635
+  ],
+  "normalised_std": [
+    0.2022273993543588,
+    0.06985876202859151,
+    2.4143312260854635
+  ],
+  "episodes": {
+    "seed 100": "success",
+    "seed 101": "success",
+    "seed 102": "success",
+    "seed 103": "success",
+    "seed 104": "success",
+    "seed 105": "success",
+    "seed 106": "success",
+    "seed 107": "success",
+    "seed 108": "success",
+    "seed 109": "success",
+    "seed 110": "success",
+    "seed 111": "success",
+    "seed 112": "success",
+    "seed 113": "success",
+    "seed 114": "success"
+  },
+  "n": 1333,
+  "n_flips": 0,
+  "by_range": [
+    {
+      "range_m": "0.0-0.5",
+      "n": 629,
+      "mean_mm_mm_deg": [
+        -0.38,
+        0.01,
+        -0.03
+      ],
+      "std_mm_mm_deg": [
+        0.22,
+        0.17,
+        0.59
+      ],
+      "normalised_std": [
+        0.04,
+        0.03,
+        1.19
+      ]
+    },
+    {
+      "range_m": "0.5-1.0",
+      "n": 704,
+      "mean_mm_mm_deg": [
+        -1.87,
+        0.02,
+        -0.0
+      ],
+      "std_mm_mm_deg": [
+        0.92,
+        0.45,
+        1.61
+      ],
+      "normalised_std": [
+        0.18,
+        0.09,
+        3.13
+      ]
+    }
+  ]
+}

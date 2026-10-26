@@ -1,4 +1,4 @@
-"""Demo video: top-down view (true path, estimated path, 3 sigma ellipse) next to the robot camera view.
+"""Demo video: top-down view (true path, both EKF estimates, 3 sigma ellipse, LiDAR map) next to the robot camera view.
 
 Used as the frame_hook of experiments.run_simulation.run_episode. The true pose drawn here comes from the episode log, which the
 runner fills from experiments.true_position. It is shown for evaluation only and never reaches the pipeline.
@@ -17,6 +17,18 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg  # noqa: E402
 
 from experiments.plots import draw_map, ellipse_points, lidar_map_rgba  # noqa: E402
 from robot_code import room_map as km  # noqa: E402
+
+
+def reference_in_room(mission, log):
+    """The mission's current reference as room coordinates. While servoing it is in the marker frame and is drawn at
+    the true marker (display only)."""
+    if mission.ref is None:
+        return np.array([]), np.array([])
+    if mission.ref_frame != "marker":
+        return mission.ref.x, mission.ref.y
+    m = log["marker_true"]
+    c, s = np.cos(m[2]), np.sin(m[2])
+    return m[0] + c * mission.ref.x - s * mission.ref.y, m[1] + s * mission.ref.x + c * mission.ref.y
 
 # drawFrameAxes warns when an axis tip falls outside the image (normal when docked close to the marker); the warning
 # does not affect the drawing of the visible part, so only errors are logged.
@@ -51,7 +63,8 @@ class DemoVideo:
         self.ax.set_title(title, fontsize=9)
         self.ref_line, = self.ax.plot([], [], color="0.55", lw=1, ls="--", label="planned reference")
         self.true_line, = self.ax.plot([], [], "b", lw=1.5, label="true path")
-        self.est_line, = self.ax.plot([], [], "r", lw=1.0, label="EKF estimate")
+        self.est_line, = self.ax.plot([], [], "r", lw=1.0, label="navigation EKF (odometry + LiDAR)")
+        self.dock_line, = self.ax.plot([], [], "m", lw=1.0, label="docking EKF (odometry + camera)")
         self.ell, = self.ax.plot([], [], "r", lw=0.8, label="3 sigma position")
         self.lidar_img = None
         self.ax.plot([], [], "s", color=(0.85, 0.1, 0.1), alpha=0.65, ms=5, label="obstacles found by the LiDAR")
@@ -74,8 +87,9 @@ class DemoVideo:
         xh, yh = np.array(log["xh"]), np.array(log["yh"])
         self.true_line.set_data(x, y)
         self.est_line.set_data(xh, yh)
+        self.dock_line.set_data(log["xd"], log["yd"])
         if mission.ref is not None and id(mission.ref) != self._plan_id:
-            self.ref_line.set_data(mission.ref.x, mission.ref.y)
+            self.ref_line.set_data(*reference_in_room(mission, log))
             self._plan_id = id(mission.ref)
         P = np.array([[log["Pxx"][-1], log["Pxy"][-1]], [log["Pxy"][-1], log["Pyy"][-1]]])
         e = ellipse_points([xh[-1], yh[-1]], P)
@@ -93,9 +107,13 @@ class DemoVideo:
         self.true_tri.set_data(tt[:, 0], tt[:, 1])
         self.est_tri.set_data(te[:, 0], te[:, 1])
         err = np.hypot(x[-1] - xh[-1], y[-1] - yh[-1])
-        fix = "accepted" if log["accepted"][-1] else ("gated out" if log["detected"][-1] else "not seen")
+        if log["phase"][-1] in ("look", "servo", "done"):
+            cam = "accepted" if log["accepted"][-1] else ("gated out" if log["detected"][-1] else "not seen")
+        else:
+            cam = "off (navigating with the LiDAR)"
+        lid = "accepted" if log["lidar_accepted"][-1] else ("gated out" if log["lidar_fix"][-1] else "-")
         self.text.set_text(f"t = {log['t'][-1]:5.1f} s   phase: {log['phase'][-1]}\n"
-                           f"marker: {fix}\nestimation error: {1000 * err:5.1f} mm\n"
+                           f"LiDAR fix: {lid}   camera: {cam}\nestimation error: {1000 * err:5.1f} mm\n"
                            f"3 sigma: {3000 * np.sqrt(log['Pxx'][-1] + log['Pyy'][-1]):5.1f} mm")
         self.canvas.draw()
         left = np.asarray(self.canvas.buffer_rgba())[:, :, :3]

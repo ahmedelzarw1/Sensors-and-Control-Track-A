@@ -1,19 +1,25 @@
-"""Docking: the reference from the pre-dock area into the charging station, the stop rule and the marker search.
+"""Docking by visual servoing: the final approach from the approach point into the charging station.
 
-Baseline written for the vision and docking teammate to take over.
+The robot is only told roughly where the station is (within 0.20 m). So the final approach is not done in the room
+frame at all: it is done in the MARKER frame M, from what the camera sees.
 
-Geometry (robot_code/room_map.py). The marker normal points into the room. The dock pose is DOCK_STANDOFF in front of the
-marker face, facing the marker. The approach direction u is the dock heading.
+1. Prior (marker_frame_prior). At the approach point the robot turns to face the given station position, and its
+   room-frame estimate is converted into a first guess of its pose relative to the marker, with the uncertainty of the
+   given station position added along the wall.
+2. Docking EKF (robot_code/kalman_filter.py, in M). Wheel odometry predicts, and every camera measurement of the marker
+   corrects the robot pose relative to the marker. The chi-square gate rejects the square-marker ambiguity flips.
+3. Reference (docking_reference), built in M from the docking EKF estimate. A cubic Bezier curve joins the marker
+   normal line at a join point JOIN_DISTANCE in front of the dock pose, tangent to the normal, then a straight line runs
+   to the dock pose and continues past it by EXTEND, driven at V_DOCK. The reference never slows to zero: the tracking
+   model is not controllable at zero reference speed (robot_code/unicycle_model.py, ctrb), so the motion is ended by the
+   stop rule.
+4. Control. The LQR tracker (robot_code/lqr_controller.py) follows the reference using the docking EKF estimate, so
+   the command comes from the camera's view of the marker: position-based visual servoing.
+5. Stop rule. Stop (command zero) when the ESTIMATED distance still to go along the approach direction falls below half
+   a control step of travel.
 
-Reference. From the current ESTIMATED pose a cubic Bezier curve joins the marker normal line at a join point
-JOIN_DISTANCE in front of the dock, tangent to the normal, then a straight line runs to the dock and continues past
-it by EXTEND. The final straight is driven at V_DOCK. The reference never slows to zero: the tracking model is not
-controllable at zero reference speed (robot_code/unicycle_model.py, ctrb), so the motion is ended by the stop rule.
-
-Stop rule. Stop (command zero) when the ESTIMATED distance still to go along u, (p_dock - p_hat) . u, falls below
-half a control step of travel. Ground truth is not used.
-
-Success (evaluation only, measured on the TRUE final pose): see DockTolerance.
+The dock pose in M is DOCK_POSE_M = (DOCK_STANDOFF, 0, pi): 0.25 m out along the marker normal, facing the marker.
+Success (evaluation only, measured on the TRUE final pose against the TRUE dock): see DockTolerance.
 """
 from __future__ import annotations
 
@@ -42,7 +48,7 @@ class DockTolerance:
     heading: float = np.deg2rad(5.0)
 
 
-def dock_frame_error(pose: np.ndarray, dock: np.ndarray = km.DOCK_POSE) -> np.ndarray:
+def dock_frame_error(pose: np.ndarray, dock: np.ndarray = km.DOCK_POSE_M) -> np.ndarray:
     """(longitudinal, lateral, heading) error of a pose relative to the dock pose, in the dock frame.
     Longitudinal is positive when the robot has stopped short of the dock."""
     c, s = np.cos(dock[2]), np.sin(dock[2])
@@ -50,15 +56,15 @@ def dock_frame_error(pose: np.ndarray, dock: np.ndarray = km.DOCK_POSE) -> np.nd
     return np.array([c * dx + s * dy, -s * dx + c * dy, float(wrap(dock[2] - pose[2]))])
 
 
-def remaining_distance(est: StateEstimate, dock: np.ndarray = km.DOCK_POSE) -> float:
+def remaining_distance(est: StateEstimate, dock: np.ndarray = km.DOCK_POSE_M) -> float:
     return float(dock_frame_error(est.x_hat, dock)[0])
 
 
-def should_stop(est: StateEstimate, v_cmd: float, Ts: float, dock: np.ndarray = km.DOCK_POSE) -> bool:
+def should_stop(est: StateEstimate, v_cmd: float, Ts: float, dock: np.ndarray = km.DOCK_POSE_M) -> bool:
     return remaining_distance(est, dock) <= 0.5 * max(v_cmd, 0.0) * Ts
 
 
-def docking_path(start_pose: np.ndarray, dock: np.ndarray = km.DOCK_POSE, ds: float = 0.005) -> DensePath:
+def docking_path(start_pose: np.ndarray, dock: np.ndarray = km.DOCK_POSE_M, ds: float = 0.005) -> DensePath:
     """Cubic Bezier from the start pose to the join point, then the straight run to the dock."""
     u = np.array([np.cos(dock[2]), np.sin(dock[2])])
     join = dock[:2] - JOIN_DISTANCE * u
@@ -88,7 +94,7 @@ def docking_path(start_pose: np.ndarray, dock: np.ndarray = km.DOCK_POSE, ds: fl
 
 
 def docking_reference(est_pose: np.ndarray, Ts: float, v_start: float = 0.05,
-                      dock: np.ndarray = km.DOCK_POSE) -> ReferenceTrajectory:
+                      dock: np.ndarray = km.DOCK_POSE_M) -> ReferenceTrajectory:
     path = docking_path(np.asarray(est_pose, float), dock)
     v = speed_profile(path, DOCK_LIMITS, v_start, V_DOCK)
     # Keep the final straight at the approach speed.
@@ -97,8 +103,33 @@ def docking_reference(est_pose: np.ndarray, Ts: float, v_start: float = 0.05,
     return reference_from_path(path, v, Ts, extend=EXTEND, v_extend=V_DOCK)
 
 
+def join_point(dock: np.ndarray = km.DOCK_POSE_M) -> np.ndarray:
+    """Where the docking curve meets the marker normal line."""
+    return dock[:2] - JOIN_DISTANCE * np.array([np.cos(dock[2]), np.sin(dock[2])])
+
+
+def marker_frame_prior(x_w: np.ndarray, P_w: np.ndarray, dock_hint_y: float) -> tuple[np.ndarray, np.ndarray]:
+    """First guess of the robot pose in the marker frame M, from the room-frame estimate (x_w, P_w) and the given
+    station position. The marker is assumed at the given position, so its error along the wall (uniform within
+    DOCK_HINT_ERROR, standard deviation DOCK_HINT_ERROR / sqrt(3)) is added to the covariance.
+
+        p_M = R(m_yaw)^T (p_W - m_xy),   theta_M = theta_W - m_yaw
+    """
+    m = km.marker_pose(dock_hint_y)
+    c, s = np.cos(m[2]), np.sin(m[2])
+    Rt = np.array([[c, s], [-s, c]])
+    x_m = np.r_[Rt @ (x_w[:2] - m[:2]), wrap(x_w[2] - m[2])]
+    J = np.eye(3)
+    J[:2, :2] = Rt
+    dm = -Rt @ np.array([0.0, 1.0])                  # change of p_M per metre of marker shift along the wall (y)
+    sigma_hint = km.DOCK_HINT_ERROR / np.sqrt(3.0)
+    P_m = J @ P_w @ J.T
+    P_m[:2, :2] += sigma_hint ** 2 * np.outer(dm, dm)
+    return x_m, P_m
+
+
 class MarkerSearch:
-    """Turn in place to bring the marker into view, using only the estimate and the known marker position.
+    """Turn in place to bring the marker into view, using only the estimate and where the marker should be.
 
     1. Turn towards the bearing at which the estimate says the marker is.
     2. If it is still not detected, sweep +-SWEEP about that bearing, then make a full turn.
@@ -112,9 +143,10 @@ class MarkerSearch:
         self._target: Optional[float] = None
         self._turned = 0.0
 
-    def command(self, est: StateEstimate, Ts: float) -> ControlCmd:
+    def command(self, est: StateEstimate, marker_xy, Ts: float) -> ControlCmd:
+        """marker_xy: where the marker should be, in the frame of the estimate."""
         x, y, th = est.x_hat
-        bearing_w = float(np.arctan2(km.MARKER_POSE_W[1] - y, km.MARKER_POSE_W[0] - x))
+        bearing_w = float(np.arctan2(marker_xy[1] - y, marker_xy[0] - x))
         targets = [bearing_w, bearing_w + self.SWEEP, bearing_w - self.SWEEP]
         if self._stage < len(targets):
             err = float(wrap(targets[self._stage] - th))

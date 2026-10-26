@@ -1,0 +1,26 @@
+[
+ [
+  0.2,
+  "localised from a LiDAR position fix"
+ ],
+ [
+  4.6,
+  "LiDAR: obstacle on the path, replanning"
+ ],
+ [
+  23.3,
+  "at the approach point: camera on, looking for the marker"
+ ],
+ [
+  23.6,
+  "marker found (3 camera fixes), visual servoing"
+ ],
+ [
+  23.6,
+  "docking reference built in the marker frame"
+ ],
+ [
+  32.6,
+  "stop rule: estimated distance to go 0.003 m"
+ ]
+]

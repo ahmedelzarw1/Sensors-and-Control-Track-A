@@ -1,27 +1,30 @@
 """The docking mission: sensors in, velocity command out. This is the whole on-robot pipeline.
 
+Given: the start point (the prior of the navigation EKF) and roughly where the charging station is (dock_hint_y).
 Inputs each control period: wheel odometry, a LiDAR scan (every second step, 5 Hz) and the camera image. It never
 receives ground truth.
 
 Per step
-1. EKF predict with the odometry, then EKF update with the marker measurement from the camera, if any.
-2. LiDAR: add the scan to the obstacle map, placed with the estimated pose (robot_code/lidar.py).
-3. Phase logic below picks the command. 4. The slew-rate limiter smooths it.
-
-Map. With use_lidar (the default) the robot is told only the walls and the charging station and finds the obstacles
-with the LiDAR. With use_lidar=False it is given the full room map instead (used for comparison).
+1. Navigation EKF (room frame): predict with the odometry, update with the LiDAR position fix (the scan matched to the
+   known walls, robot_code/lidar.py).
+2. LiDAR: add the scan to the obstacle map, placed with the EKF estimate (collision detection and replanning).
+3. Camera: used only at the end (phases LOOK and SERVO). The docking EKF (marker frame) predicts with the odometry
+   and is updated with the marker measurement.
+4. Phase logic below picks the command. 5. The slew-rate limiter smooths it.
 
 Phases
-- LOCALISE: before driving, turn towards where the prior says the marker is (and sweep if needed) until
-           localise_fixes marker measurements have been accepted, or give up after localise_timeout and continue on the
-           prior alone. This initialises the estimate from the marker instead of only from the start pad.
-- PLAN:    plan a path from the estimated pose to the pre-dock pose (LiDAR map, or the full room map).
-- ALIGN:   turn in place towards the start direction of the path (state feedback on the estimated heading).
-- TRACK:   LQR tracking of the path. Go back to PLAN if the estimated tracking error becomes large (typically after the
-           marker comes into view and corrects the estimate), if the LiDAR shows an obstacle on the rest of the path, or
-           if the LiDAR safety stop triggers (something too close ahead).
-- ACQUIRE: at the end of the path, if the marker has not been accepted recently, search for it (robot_code/docking).
-- DOCK:    LQR tracking of the docking reference built from the current estimate; stop by the stop rule.
+- LOCALISE: hold still until the navigation EKF has accepted a LiDAR position fix (at most localise_timeout), so the
+          first plan starts from a measured pose and not only from the start point.
+- PLAN:   plan a path from the EKF estimate to the approach point in front of the given station position, on the
+          LiDAR map (walls plus the obstacles found so far).
+- ALIGN:  turn in place to a heading (state feedback on the estimated heading).
+- TRACK:  LQR tracking of the path on the EKF estimate. Back to PLAN if the estimated tracking error becomes large, if
+          the LiDAR shows an obstacle on the rest of the path, or if the LiDAR safety stop triggers (something too close
+          ahead). At the end of the path: ALIGN to face the given station position, then LOOK.
+- LOOK:   start the docking EKF from the navigation estimate and the given station position, then hold still (or
+          search by turning) until the camera has given servo_fixes accepted marker measurements.
+- SERVO:  visual servoing: LQR tracking of the docking reference built in the marker frame, on the docking EKF
+          estimate; stop by the stop rule. If the marker is lost for dock_fix_timeout, back to LOOK.
 - DONE / FAILED.
 """
 from __future__ import annotations
@@ -35,10 +38,11 @@ import numpy as np
 from robot_code import room_map as km
 from robot_code.lqr_controller import LQRTracker
 from robot_code.lqr_controller import SlewRateLimiter
-from robot_code.docking import MarkerSearch, docking_reference, remaining_distance, should_stop
-from robot_code.lidar import LidarMap, front_blocked, front_distance
+from robot_code.docking import (MarkerSearch, docking_reference, join_point, marker_frame_prior, remaining_distance,
+                                should_stop)
+from robot_code.kalman_filter import EKF
+from robot_code.lidar import LidarMap, front_blocked, front_distance, wall_fix
 from robot_code.unicycle_model import tracking_error
-from robot_code.path_planning import known_map_grid
 from robot_code.path_planning import PlannerParams, plan_reference
 from robot_code.data_types import ControlCmd, LidarScan, Odometry, ReferenceTrajectory, StateEstimate, wrap
 
@@ -48,8 +52,8 @@ class Phase(str, Enum):
     PLAN = "plan"
     ALIGN = "align"
     TRACK = "track"
-    ACQUIRE = "acquire"
-    DOCK = "dock"
+    LOOK = "look"
+    SERVO = "servo"
     DONE = "done"
     FAILED = "failed"
 
@@ -57,44 +61,49 @@ class Phase(str, Enum):
 @dataclass
 class MissionConfig:
     Ts: float = 0.1
+    localise_timeout: float = 3.0     # s waiting for the first LiDAR fix, then plan on the start point alone
     align_tol: float = np.deg2rad(8.0)
     align_gain: float = 2.0
     align_omega: float = 1.0
     replan_pos: float = 0.25          # m, estimated tracking error that triggers a replan
     replan_heading: float = np.deg2rad(35.0)
-    fix_recent: float = 1.0           # s, a marker fix this recent counts as "marker in view"
     dock_align_max: float = np.deg2rad(60.0)  # larger heading error to the join point is fixed by turning first
-    dock_fix_timeout: float = 3.0     # s without an accepted marker fix during docking: stop and search again
+    dock_fix_timeout: float = 3.0     # s without an accepted marker fix while servoing: stop and look again
+    servo_fixes: int = 3              # accepted marker fixes before the visual servoing starts
+    look_timeout: float = 30.0        # s looking for the marker before giving up
     timeout: float = 240.0            # s
     max_replans: int = 12
-    localise_fixes: int = 3           # accepted marker fixes required before driving
-    localise_timeout: float = 20.0    # s, then continue on the prior
     planner_params: PlannerParams = field(default_factory=PlannerParams)
-    use_lidar: bool = True            # find the obstacles with the LiDAR (False: use the full room map)
     lidar_offset_xy: tuple = (-0.032, 0.0)   # LiDAR position in the robot frame (ROBOTIS LDS-01 mount)
     lidar_replan_interval: float = 1.0       # s, at most one LiDAR-triggered replan per interval
     max_lidar_replans: int = 40
+    use_lidar_fix: bool = True               # False: the navigation EKF runs on odometry alone (comparison only)
 
 
 class DockingMission:
-    def __init__(self, ekf, marker_sensor, tracker: LQRTracker, cfg: MissionConfig = MissionConfig(),
-                 slew: Optional[SlewRateLimiter] = None, layout: Optional[km.Layout] = None):
+    def __init__(self, ekf: EKF, marker_sensor, tracker: LQRTracker, dock_hint_y: float,
+                 cfg: MissionConfig = MissionConfig(), slew: Optional[SlewRateLimiter] = None):
         self.ekf, self.sensor, self.tracker, self.cfg = ekf, marker_sensor, tracker, cfg
+        self.dock_hint_y = float(dock_hint_y)
+        self.approach = km.approach_pose(self.dock_hint_y)        # end point of the trip (room frame)
+        self.marker_hint = km.marker_pose(self.dock_hint_y)       # where the marker should be (room frame)
+        self.dock_ekf: Optional[EKF] = None                       # created at the end, in the marker frame
         self.slew = slew
         if self.slew is not None:
             self.slew.reset()
-        self.known_grid = known_map_grid(layout=layout)  # the full room map (used only when use_lidar is False)
-        self.lidar_map = LidarMap(cfg.lidar_offset_xy) if cfg.use_lidar else None
+        self.lidar_map = LidarMap(cfg.lidar_offset_xy)
         self.last_scan: Optional[LidarScan] = None
         self.new_scan = False
         self.last_lidar_replan = -np.inf
         self.n_lidar_replans = 0
-        self.phase = Phase.LOCALISE if cfg.localise_fixes > 0 else Phase.PLAN
-        self.n_fixes = 0
+        self.phase = Phase.LOCALISE
         self.ref: Optional[ReferenceTrajectory] = None
+        self.ref_frame = "room"
         self.k = 0
         self.t = 0.0
+        self.n_fixes = 0
         self.last_fix_t = -np.inf
+        self.look_start = 0.0
         self.align_target = 0.0
         self.after_align = Phase.TRACK
         self.search = MarkerSearch()
@@ -107,37 +116,35 @@ class DockingMission:
     def _event(self, msg: str) -> None:
         self.events.append((round(self.t, 2), msg))
 
-    def planning_grid(self):
-        return self.lidar_map.grid() if self.lidar_map is not None else self.known_grid
-
     def _plan(self, est: StateEstimate) -> None:
-        plan = plan_reference(self.planning_grid(), est.x_hat, km.PRE_DOCK_POSE, self.cfg.Ts, self.cfg.planner_params)
+        plan = plan_reference(self.lidar_map.grid(), est.x_hat, self.approach, self.cfg.Ts, self.cfg.planner_params)
         if plan is None:
             self._event("no path found")
             self.phase = Phase.FAILED
             return
         self.plans.append((self.t, plan))
-        self.ref, self.k = plan.ref, 0
+        self.ref, self.ref_frame, self.k = plan.ref, "room", 0
         self._start_align(float(plan.ref.theta[0]), Phase.TRACK)
 
     def _start_align(self, target: float, then: Phase) -> None:
         self.align_target, self.after_align = target, then
         self.phase = Phase.ALIGN
 
-    def _start_dock(self, est: StateEstimate) -> None:
-        join = km.DOCK_POSE[:2] - 0.30 * np.array([np.cos(km.DOCK_POSE[2]), np.sin(km.DOCK_POSE[2])])
-        to_join = float(np.arctan2(join[1] - est.x_hat[1], join[0] - est.x_hat[0]))
-        if abs(wrap(to_join - est.x_hat[2])) > self.cfg.dock_align_max:
-            self._start_align(to_join, Phase.DOCK)
-            return
-        self.ref, self.k = docking_reference(est.x_hat, self.cfg.Ts), 0
-        self.phase = Phase.DOCK
-        self._event("docking reference built")
+    def _start_look(self, est: StateEstimate) -> None:
+        """Start the docking EKF in the marker frame from the navigation estimate and the given station position."""
+        x_m, P_m = marker_frame_prior(est.x_hat, est.P, self.dock_hint_y)
+        self.dock_ekf = EKF(x_m, P_m, self.ekf.p, marker_pose=np.zeros(3))
+        self.dock_ekf.t = self.t
+        self.n_fixes, self.last_fix_t, self.look_start = 0, -np.inf, self.t
+        self.search = MarkerSearch()
+        self.ref = None
+        self.phase = Phase.LOOK
+        self._event("at the approach point: camera on, looking for the marker")
 
     def _lidar_replan_needed(self) -> bool:
         """LiDAR checks while following a path: the safety stop, and a newly seen obstacle on the rest of the path.
         Either one sends the robot back to PLAN (at most once per lidar_replan_interval)."""
-        if self.lidar_map is None or not self.new_scan or self.t - self.last_lidar_replan < self.cfg.lidar_replan_interval:
+        if not self.new_scan or self.t - self.last_lidar_replan < self.cfg.lidar_replan_interval:
             return False
         reason = None
         if front_blocked(self.last_scan, self.cfg.lidar_offset_xy):
@@ -158,30 +165,42 @@ class DockingMission:
             self.phase = Phase.PLAN
         return True
 
-    def marker_recent(self) -> bool:
-        return self.t - self.last_fix_t <= self.cfg.fix_recent
-
     # ------------------------------------------------------------------ main step
     def step(self, t: float, odom: Optional[Odometry], image: Optional[np.ndarray],
              lidar: Optional[LidarScan] = None) -> ControlCmd:
         self.t = t
+        # 1. Navigation EKF: odometry predict, LiDAR position fix update.
         if odom is not None:
             self.ekf.predict(odom)
-        meas = self.sensor.measure(image, t) if image is not None else None
-        accepted = self.ekf.update_marker(meas) if meas is not None else False
-        if accepted:
-            self.last_fix_t = t
-            self.n_fixes += 1
-        est = self.ekf.estimate()
+            if self.dock_ekf is not None:
+                self.dock_ekf.predict(odom)
+        fix, fix_ok = None, False
         self.new_scan = lidar is not None
         if lidar is not None:
             self.last_scan = lidar
-            if self.lidar_map is not None:
-                self.lidar_map.add_scan(lidar, est)
-        self.info = {"meas": meas, "accepted": accepted,
-                     "front": front_distance(self.last_scan, self.cfg.lidar_offset_xy) if self.last_scan else np.inf,
-                     "nis": self.ekf.updates[-1].nis if meas is not None and self.ekf.updates else np.nan}
+        if lidar is not None and self.cfg.use_lidar_fix:
+            fix = wall_fix(lidar, self.ekf.x, self.dock_hint_y, self.cfg.lidar_offset_xy, self.ekf.p.lidar_r_scale)
+            fix_ok = self.ekf.update_lidar(fix) if fix is not None else False
+        est = self.ekf.estimate()
+        # 2. LiDAR obstacle map, placed with the estimate.
+        if lidar is not None:
+            self.lidar_map.add_scan(lidar, est)
+        # 3. Camera, only at the end of the trip.
+        meas, accepted = None, False
+        if self.phase in (Phase.LOOK, Phase.SERVO) and image is not None:
+            meas = self.sensor.measure(image, t)
+            accepted = self.dock_ekf.update_marker(meas) if meas is not None else False
+            if accepted:
+                self.last_fix_t = t
+                self.n_fixes += 1
+        cam_nis = self.dock_ekf.updates[-1].nis if meas is not None and self.dock_ekf.updates else np.nan
+        self.info = {"meas": meas, "accepted": accepted, "nis": cam_nis,
+                     "lidar_fix": fix, "lidar_accepted": fix_ok,
+                     "lidar_nis": self.ekf.updates[-1].nis if fix is not None else np.nan,
+                     "front": front_distance(self.last_scan, self.cfg.lidar_offset_xy) if self.last_scan else np.inf}
 
+        # 4. Phase logic, 5. slew-rate limit.
+        self.tracker.last_du = None
         cmd = self._decide(est)
         if self.phase in (Phase.DONE, Phase.FAILED):
             cmd = ControlCmd(0.0, 0.0)   # the stop is not slew limited
@@ -190,7 +209,9 @@ class DockingMission:
         elif self.slew is not None:
             cmd = self.slew.apply(cmd)
         self.info.update(phase=self.phase.value, est=est, cmd=cmd,
-                         ref_pose=self.ref.pose(self.k) if self.ref is not None else None)
+                         est_dock=self.dock_ekf.estimate() if self.dock_ekf is not None else None,
+                         du=self.tracker.last_du,
+                         ref_pose=self.ref.pose(self.k) if self.ref is not None else None, ref_frame=self.ref_frame)
         return cmd
 
     def _decide(self, est: StateEstimate) -> ControlCmd:
@@ -202,16 +223,14 @@ class DockingMission:
             return ControlCmd(0.0, 0.0)
 
         if self.phase == Phase.LOCALISE:
-            if self.n_fixes >= self.cfg.localise_fixes:
-                self._event(f"localised from {self.n_fixes} marker fixes")
+            if self.info["lidar_accepted"]:
+                self._event("localised from a LiDAR position fix")
                 self.phase = Phase.PLAN
-            elif self.t >= self.cfg.localise_timeout:
-                self._event("no marker fix before the localisation timeout, continuing on the start prior")
+            elif self.t >= self.cfg.localise_timeout or not self.cfg.use_lidar_fix:
+                self._event("no LiDAR fix accepted yet, planning from the start point")
                 self.phase = Phase.PLAN
-            elif self.t - self.last_fix_t < 0.05:
-                return ControlCmd(0.0, 0.0)   # marker in view: hold still while the fixes accumulate
             else:
-                return self.search.command(est, self.cfg.Ts)
+                return ControlCmd(0.0, 0.0)
 
         if self.phase == Phase.PLAN:
             self._plan(est)
@@ -223,62 +242,72 @@ class DockingMission:
             if abs(err) > self.cfg.align_tol:
                 return ControlCmd(0.0, float(np.clip(self.cfg.align_gain * err, -self.cfg.align_omega,
                                                      self.cfg.align_omega)))
-            if self.after_align == Phase.DOCK:
-                self._start_dock(est)
+            if self.after_align == Phase.LOOK:
+                self._start_look(est)
             else:
                 self.phase, self.k = self.after_align, 0
 
         if self.phase == Phase.TRACK:
             if self.k >= len(self.ref) - 1:
-                if self.marker_recent():
-                    self._start_dock(est)
-                else:
-                    self._event("end of path without a recent marker fix, searching")
-                    self.search = MarkerSearch()
-                    self.phase = Phase.ACQUIRE
-            else:
-                e = tracking_error(est.x_hat, self.ref.pose(self.k))
-                if (np.hypot(e[0], e[1]) > self.cfg.replan_pos or abs(e[2]) > self.cfg.replan_heading):
-                    self.n_replans += 1
-                    self._event(f"replan (estimated tracking error {np.hypot(e[0], e[1]):.2f} m, "
-                                f"{np.rad2deg(e[2]):.0f} deg)")
-                    if self.n_replans > self.cfg.max_replans:
-                        self.phase = Phase.FAILED
-                        return ControlCmd(0.0, 0.0)
-                    self.phase = Phase.PLAN
-                    return self._decide(est)
-                if self._lidar_replan_needed():
-                    return self._decide(est)
-                cmd = self.tracker.command(est, self.ref, self.k)
-                self.k += 1
-                return cmd
-
-        if self.phase == Phase.ACQUIRE:
-            if self.t - self.last_fix_t < 0.05:  # accepted this very step
-                self._event("marker acquired")
-                self._start_dock(est)
-            else:
-                return self.search.command(est, self.cfg.Ts)
-
-        if self.phase == Phase.ALIGN:   # entered from _start_dock
-            return self._decide(est)
-
-        if self.phase == Phase.DOCK:
-            # The final approach relies on the marker. Without recent fixes the estimate may be far off and the stop
-            # rule would stop the robot in the wrong place, so search for the marker again instead.
-            if self.t - self.last_fix_t > self.cfg.dock_fix_timeout:
-                self._event("no marker fix during docking, searching again")
-                self.search = MarkerSearch()
-                self.phase = Phase.ACQUIRE
-                return self.search.command(est, self.cfg.Ts)
+                # End point reached: face the given station position, then the camera takes over.
+                mx, my = self.marker_hint[:2]
+                self._start_align(float(np.arctan2(my - est.x_hat[1], mx - est.x_hat[0])), Phase.LOOK)
+                return self._decide(est)
             e = tracking_error(est.x_hat, self.ref.pose(self.k))
             if np.hypot(e[0], e[1]) > self.cfg.replan_pos or abs(e[2]) > self.cfg.replan_heading:
-                self._event("docking reference rebuilt after a large estimated error")
-                self.ref, self.k = docking_reference(est.x_hat, self.cfg.Ts), 0
+                self.n_replans += 1
+                self._event(f"replan (estimated tracking error {np.hypot(e[0], e[1]):.2f} m, "
+                            f"{np.rad2deg(e[2]):.0f} deg)")
+                if self.n_replans > self.cfg.max_replans:
+                    self.phase = Phase.FAILED
+                    return ControlCmd(0.0, 0.0)
+                self.phase = Phase.PLAN
+                return self._decide(est)
+            if self._lidar_replan_needed():
+                return self._decide(est)
             cmd = self.tracker.command(est, self.ref, self.k)
             self.k += 1
-            if should_stop(est, cmd.v, self.cfg.Ts) or self.k >= len(self.ref):
-                self._event(f"stop rule: estimated distance to go {remaining_distance(est):.3f} m")
+            return cmd
+
+        if self.phase == Phase.LOOK:
+            est_m = self.dock_ekf.estimate()
+            if self.n_fixes >= self.cfg.servo_fixes:
+                self._event(f"marker found ({self.n_fixes} camera fixes), visual servoing")
+                self.phase = Phase.SERVO
+            elif self.t - self.look_start > self.cfg.look_timeout:
+                self._event("marker not found")
+                self.phase = Phase.FAILED
+                return ControlCmd(0.0, 0.0)
+            elif self.t - self.last_fix_t < 0.05:
+                return ControlCmd(0.0, 0.0)   # marker in view: hold still while the fixes accumulate
+            else:
+                return self.search.command(est_m, (0.0, 0.0), self.cfg.Ts)
+
+        if self.phase == Phase.SERVO:
+            est_m = self.dock_ekf.estimate()
+            if self.t - self.last_fix_t > self.cfg.dock_fix_timeout:
+                self._event("marker lost while servoing, looking again")
+                self.n_fixes, self.look_start, self.ref = 0, self.t, None
+                self.search = MarkerSearch()
+                self.phase = Phase.LOOK
+                return self.search.command(est_m, (0.0, 0.0), self.cfg.Ts)
+            if self.ref is None:
+                # Turn first if the join point is far off to the side, then build the docking reference.
+                jx, jy = join_point()
+                err = float(wrap(np.arctan2(jy - est_m.x_hat[1], jx - est_m.x_hat[0]) - est_m.x_hat[2]))
+                if abs(err) > self.cfg.dock_align_max:
+                    return ControlCmd(0.0, float(np.clip(self.cfg.align_gain * err, -self.cfg.align_omega,
+                                                         self.cfg.align_omega)))
+                self.ref, self.ref_frame, self.k = docking_reference(est_m.x_hat, self.cfg.Ts), "marker", 0
+                self._event("docking reference built in the marker frame")
+            e = tracking_error(est_m.x_hat, self.ref.pose(self.k))
+            if np.hypot(e[0], e[1]) > self.cfg.replan_pos or abs(e[2]) > self.cfg.replan_heading:
+                self._event("docking reference rebuilt after a large estimated error")
+                self.ref, self.k = docking_reference(est_m.x_hat, self.cfg.Ts), 0
+            cmd = self.tracker.command(est_m, self.ref, self.k)
+            self.k += 1
+            if should_stop(est_m, cmd.v, self.cfg.Ts) or self.k >= len(self.ref):
+                self._event(f"stop rule: estimated distance to go {remaining_distance(est_m):.3f} m")
                 self.phase = Phase.DONE
                 return ControlCmd(0.0, 0.0)
             return cmd

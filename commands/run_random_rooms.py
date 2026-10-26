@@ -1,13 +1,13 @@
-"""Random layouts: random obstacles and a random start pad, checked for clashes, then the full docking pipeline.
+"""Random rooms: a random start point at the west end, a random charging station on the east wall (the robot is told
+its position only to within 0.20 m) and random obstacles in between, checked for clashes, then the full pipeline.
 
-    python commands/run_random_rooms.py                       # one random layout (a new seed each time, printed)
-    python commands/run_random_rooms.py --seed 7              # reproduce layout 7 exactly
-    python commands/run_random_rooms.py --seed 0 --count 30   # 30 layouts in a row, with a success rate and its interval
-    python commands/run_random_rooms.py --allow-hidden        # also allow start pads without a view of the marker
+    python commands/run_random_rooms.py                       # one random room (a new seed each time, printed)
+    python commands/run_random_rooms.py --seed 7              # reproduce room 7 exactly
+    python commands/run_random_rooms.py --seed 0 --count 30   # 30 rooms in a row, with a success rate and its interval
 
-While it runs, the terminal works like a serial monitor: the randomised layout and the checks it passed, then a line
-twice a second with what the robot is calculating (estimate, uncertainty, commands, marker measurement, NIS, tracking
-error), and the events as they happen.
+While it runs, the terminal works like a serial monitor: the randomised room and the checks it passed, then a line
+twice a second with what the robot is calculating (EKF estimate, uncertainty, commands, LiDAR fix, safety-stop
+distance, and at the end the marker measurement and the docking estimate), and the events as they happen.
 
 Output in results/random_rooms/seed_<n>/: layout.png (the layout with the clash rules drawn), layout.json, photos/ (robot
 camera and room at the key moments), contact_sheet.png, demo.mp4, monitor.txt (the serial-monitor printout), log.csv
@@ -63,7 +63,7 @@ class Tee:
 
 
 def plot_layout(layout: km.Layout, report, path: Path) -> None:
-    """The layout with the clash rules drawn: bounding circles, the 0.40 m gap, the docking corridor, the start pad."""
+    """The room with the clash rules drawn: bounding circles, the 0.40 m gap, the docking corridor, the start point."""
     fig, ax = plt.subplots(figsize=(8, 6.2))
     draw_map(ax, layout=layout)
     for ob in layout.obstacles:
@@ -71,30 +71,31 @@ def plot_layout(layout: km.Layout, report, path: Path) -> None:
         ax.add_patch(mpatches.Circle((ob.x, ob.y), ob.bounding_radius + rl.GAP / 2, fill=False, ls=":", lw=0.8,
                                      ec="tab:red"))
         ax.annotate(ob.name.replace("random_", ""), (ob.x, ob.y), fontsize=7, ha="center", va="center")
-    x0 = km.PRE_DOCK_POSE[0] - rl.CORRIDOR_BACK
-    ax.add_patch(mpatches.Rectangle((x0, km.DOCK_Y - rl.CORRIDOR_HALF_WIDTH), km.ROOM_X_MAX - x0,
-                                    2 * rl.CORRIDOR_HALF_WIDTH, fc="tab:green", alpha=0.12, ec="tab:green", ls="--"))
+    x0, x1, y0, y1 = rl.corridor_box(layout)
+    ax.add_patch(mpatches.Rectangle((x0, y0), x1 - x0, y1 - y0, fc="tab:green", alpha=0.12, ec="tab:green", ls="--"))
     ax.add_patch(mpatches.Circle(layout.start[:2], rl.START_OBSTACLE_CLEARANCE, fill=False, ec="tab:blue", ls=":"))
     robot_triangle(ax, layout.start, "tab:blue")
-    plan = plan_reference(known_map_grid(layout=layout), layout.start, km.PRE_DOCK_POSE, 0.1)
+    plan = plan_reference(known_map_grid(layout=layout), layout.start, km.approach_pose(layout.dock_hint_y), 0.1)
     if plan is not None:
         ax.plot(plan.ref.x, plan.ref.y, "k--", lw=1)
     ax.plot([], [], ls="--", c="0.3", label="obstacle bounding circle")
     ax.plot([], [], ls=":", c="tab:red", label="half of the 0.40 m gap rule (red circles never overlap)")
     ax.plot([], [], c="tab:green", alpha=0.5, lw=6, label="docking corridor kept clear")
+    ax.plot([], [], c="tab:purple", alpha=0.25, lw=6, label="given station position +- 0.20 m")
     ax.plot([], [], ls=":", c="tab:blue", label="start clearance")
-    ax.plot([], [], "k--", label="planned path")
+    ax.plot([], [], "k--", label="path on the full map (feasibility check)")
     ax.legend(fontsize=7, loc="lower left")
     ax.set_title(f"{layout.name}: {len(layout.obstacles)} obstacles, {report.tries} draw(s), "
-                 f"smallest gap {report.min_obstacle_gap:.2f} m", fontsize=9)
+                 f"smallest gap {report.min_obstacle_gap:.2f} m, station {1000 * report.dock_hint_error:+.0f} mm "
+                 "from the given position", fontsize=9)
     fig.tight_layout()
     fig.savefig(path, dpi=130)
     plt.close(fig)
 
 
 def run_one(seed: int, args) -> dict:
-    layout, report = rl.sample_layout(seed, allow_hidden=args.allow_hidden)
-    out = (OUT / "known_map" if args.known_map else OUT / "no_localise" if args.no_localise else OUT) / f"seed_{seed}"
+    layout, report = rl.sample_layout(seed)
+    out = OUT / f"seed_{seed}"
     out.mkdir(parents=True, exist_ok=True)
     # The monitor output always goes to monitor.txt, and to the terminal unless --quiet.
     log_file = open(out / "monitor.txt", "w")
@@ -107,12 +108,10 @@ def run_one(seed: int, args) -> dict:
     photos = None if args.no_photos else PhotoTaker(out / "photos", layout=layout)
     if photos:
         hooks.append(photos)
-    video = None if args.no_video else DemoVideo(out / "demo.mp4", title=f"random layout, seed {seed}", layout=layout)
+    video = None if args.no_video else DemoVideo(out / "demo.mp4", title=f"random room, seed {seed}", layout=layout)
     if video:
         hooks.append(video)
-    res = run_episode(EpisodeConfig(layout=layout, seed=seed, start="random", use_lidar=not args.known_map,
-                                    localise_fixes=0 if args.no_localise else 3),
-                      frame_hook=hooks)
+    res = run_episode(EpisodeConfig(layout=layout, seed=seed), frame_hook=hooks)
     if video:
         video.close()
     sheet = photos.finish(res) if photos else None
@@ -120,9 +119,8 @@ def run_one(seed: int, args) -> dict:
     plot_episode(res, out, title=f"{layout.name}: {res.status}")
     (out / "events.json").write_text(json.dumps(res.events, indent=1) + "\n")
     m = episode_metrics(res)
-    m.update(n_lidar_replans=sum("LiDAR" in e[1] for e in res.events), n_obstacles=len(layout.obstacles),
-             path_length_m=report.path_length,
-             marker_visible_at_start=report.marker_visible_from_start, min_obstacle_gap_m=report.min_obstacle_gap)
+    m.update(n_obstacles=len(layout.obstacles), path_length_m=report.path_length,
+             min_obstacle_gap_m=report.min_obstacle_gap)
     e = res.final_error
     log_file.write(f"RESULT: {res.status}, dock error {1000 * e[0]:+.1f} mm along, {1000 * e[1]:+.1f} mm lateral, "
                    f"{np.rad2deg(e[2]):+.2f} deg, time {res.duration:.1f} s\n")
@@ -138,11 +136,6 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--seed", type=int, help="layout seed (default: a new random seed, printed)")
     ap.add_argument("--count", type=int, default=1, help="number of consecutive seeds to run")
-    ap.add_argument("--allow-hidden", action="store_true", help="allow start pads without a view of the marker")
-    ap.add_argument("--no-localise", action="store_true",
-                    help="skip the localisation turn: the robot plans at once on an empty LiDAR map")
-    ap.add_argument("--known-map", action="store_true",
-                    help="give the robot the full room map instead of finding the obstacles with the LiDAR")
     ap.add_argument("--every", type=int, default=5, help="monitor line every N control steps (5 = twice a second)")
     ap.add_argument("--quiet", action="store_true", help="no serial monitor output")
     ap.add_argument("--no-video", action="store_true")
@@ -156,8 +149,7 @@ def main() -> None:
         rows.append(run_one(seed, args))
     if args.count > 1:
         OUT.mkdir(parents=True, exist_ok=True)
-        mode = "known_map" if args.known_map else "lidar_no_localise" if args.no_localise else "lidar"
-        path = OUT / f"summary_{mode}_seeds_{seed0}_to_{seed0 + args.count - 1}.csv"
+        path = OUT / f"summary_seeds_{seed0}_to_{seed0 + args.count - 1}.csv"
         with open(path, "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(rows[0]))
             w.writeheader()
@@ -165,7 +157,7 @@ def main() -> None:
         n_ok = sum(r["success"] for r in rows)
         lo, hi = wilson_interval(n_ok, len(rows))
         pos = np.array([1000 * r["dock_err_pos_m"] for r in rows if r["success"]])
-        print(f"\n{n_ok} of {len(rows)} random layouts docked ({100 * n_ok / len(rows):.0f} percent, 95 percent Wilson "
+        print(f"\n{n_ok} of {len(rows)} random rooms docked ({100 * n_ok / len(rows):.0f} percent, 95 percent Wilson "
               f"interval {100 * lo:.0f} to {100 * hi:.0f} percent)." +
               (f" Docking position error over the successes: median {np.median(pos):.1f} mm, max {pos.max():.1f} mm."
                if pos.size else "") + f"\nSummary: {path.relative_to(ROOT)}")

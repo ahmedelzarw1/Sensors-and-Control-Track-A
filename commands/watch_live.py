@@ -1,15 +1,17 @@
 """Watch the docking mission live in the interactive MuJoCo viewer.
 
-macOS:  ~/.venvs/track-a/bin/mjpython commands/watch_live.py --start centre
-Linux:  python commands/watch_live.py --start centre
+macOS:  ~/.venvs/track-a/bin/mjpython commands/watch_live.py --random
+Linux:  python commands/watch_live.py --random
 
-Options: --start <pad> (see robot_code/room_map.py), --seed N, --speed 2.0 (faster than real time),
-         --random [SEED] (a random layout, see robot_code/random_room.py; without SEED a new one is drawn),
+Options: --random [SEED] (a random room, see robot_code/random_room.py; without SEED a new one is drawn),
+         --start <point> (the fixed demo room from a start point, see robot_code/room_map.py), --seed N,
+         --speed 2.0 (faster than real time),
          --monitor (print what the robot calculates, serial-monitor style; always on with --random),
          --no-panel (hide the live video panel), --panel-size 0.5 (its width as a fraction of the window),
          --record (also save the video panel to results/live/<run>/demo.mp4).
-The live video panel in the corner of the viewer shows the top-down view (true path, EKF estimate, 3 sigma ellipse,
-planned path) next to the robot camera with the detected marker, the same view as the demo videos.
+The live video panel in the corner of the viewer shows the top-down view (true path, navigation EKF estimate with its
+3 sigma ellipse, docking EKF estimate, planned path, LiDAR obstacle map) next to the robot camera, the same view as the
+demo videos.
 Mouse: left drag rotates, right drag pans, scroll zooms. Double-click a body to select it. Close the window to stop.
 The pipeline is exactly the one in commands/run_demo.py; the viewer only displays the simulator state.
 """
@@ -37,7 +39,7 @@ from robot_code import random_room as rl  # noqa: E402
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--start", choices=list(km.ALL_START_POSES), default="centre")
+    ap.add_argument("--start", choices=list(km.START_POINTS), default="west_centre")
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--speed", type=float, default=1.0, help="playback speed relative to real time")
     ap.add_argument("--random", nargs="?", const=-1, type=int, help="random layout (optional seed)")
@@ -45,15 +47,14 @@ def main() -> None:
     ap.add_argument("--no-panel", action="store_true", help="hide the live video panel")
     ap.add_argument("--panel-size", type=float, default=0.5, help="panel width as a fraction of the window width")
     ap.add_argument("--record", action="store_true", help="also save the video panel as an MP4")
-    ap.add_argument("--known-map", action="store_true",
-                    help="give the robot the full room map instead of finding the obstacles with the LiDAR")
     args = ap.parse_args()
-    layout = None
     if args.random is not None:
         seed = args.random if args.random >= 0 else int(time.time()) % 100000
         layout, report = rl.sample_layout(seed)
         args.seed, args.monitor = seed, True
         print_layout(layout, report)
+    else:
+        layout = km.default_layout(args.start)
 
     state = {"viewer": None, "t0": None, "phase": None, "sim": None, "cam": None, "panel": None, "runs": 0}
 
@@ -70,22 +71,28 @@ def main() -> None:
         est = info.get("est")
         if est is not None:
             meas = info.get("meas")
-            marker = (f"{meas.range_bearing[0]:.2f} m, {'used' if info['accepted'] else 'rejected'}"
-                      if meas is not None else "not seen")
+            if info["phase"] in ("look", "servo", "done"):
+                marker = (f"{meas.range_bearing[0]:.2f} m, {'used' if info['accepted'] else 'rejected'}"
+                          if meas is not None else "not seen")
+            else:
+                marker = "camera off"
+            lidar = ("used" if info["lidar_accepted"] else "rejected") if info["lidar_fix"] is not None else "-"
             sd = 1000 * np.sqrt(max(est.P[0, 0] + est.P[1, 1], 0.0))
             v.set_texts((mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT,
-                         "time\nphase\nestimate x, y\nheading\nuncertainty (1 sigma)\ncommand v, w\nmarker",
+                         "time\nphase\nestimate x, y\nheading\nuncertainty (1 sigma)\ncommand v, w\nLiDAR fix\n"
+                         "LiDAR front\nmarker",
                          f"{mission.t:.1f} s\n{info['phase']}\n{est.x_hat[0]:.3f}, {est.x_hat[1]:.3f} m\n"
                          f"{np.rad2deg(est.x_hat[2]):.1f} deg\n{sd:.1f} mm\n"
-                         f"{info['cmd'].v:.3f} m/s, {info['cmd'].omega:.3f} rad/s\n{marker}"))
+                         f"{info['cmd'].v:.3f} m/s, {info['cmd'].omega:.3f} rad/s\n{lidar}\n"
+                         f"{info['front']:.2f} m\n{marker}"))
 
     def make_panel():
         if args.no_panel:
             return None
         state["runs"] += 1
-        name = f"random_{args.seed}" if layout is not None else f"{args.start}_{args.seed}"
+        name = f"random_{args.seed}" if args.random is not None else f"{args.start}_{args.seed}"
         path = ROOT / "results" / "live" / f"{name}_run{state['runs']}" / "demo.mp4" if args.record else None
-        title = f"random room, seed {args.seed}" if layout is not None else f"start pad '{args.start}' (seed {args.seed})"
+        title = f"random room, seed {args.seed}" if args.random is not None else f"demo room from '{args.start}' (seed {args.seed})"
         state["panel"] = DemoVideo(path, title=title, layout=layout)
         return state["panel"]
 
@@ -129,8 +136,7 @@ def main() -> None:
             v.close()
         state["viewer"], state["phase"] = None, None
 
-    cfg = EpisodeConfig(start=args.start if layout is None else "random", seed=args.seed, layout=layout,
-                        use_lidar=not args.known_map)
+    cfg = EpisodeConfig(seed=args.seed, layout=layout)
     try:
         while True:
             try:
@@ -157,8 +163,8 @@ def main() -> None:
                     time.sleep(0.05)
                 break
             except ViewerReset:
-                print("\nReset pressed: restarting the run from the start pad (robot, estimator, planner and controller "
-                      "all start again).\n")
+                print("\nReset pressed: restarting the run from the start point (robot, estimators, planner and "
+                      "controller all start again).\n")
                 close_viewer()
     except KeyboardInterrupt:
         print("viewer closed")

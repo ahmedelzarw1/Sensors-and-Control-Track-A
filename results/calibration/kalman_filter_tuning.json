@@ -1,0 +1,1878 @@
+{
+  "summary": [
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.5,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 3.7618787301430423,
+      "dock_nees": 3.076388942522072,
+      "lidar_nis": 1.8271722464588074,
+      "lidar_rejected": 0.0027244870770050627,
+      "camera_nis": 2.990336174822957,
+      "camera_rejected": 0.07614317901296122
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.75,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 3.748722399124965,
+      "dock_nees": 3.503545066944142,
+      "lidar_nis": 1.8502645014407193,
+      "lidar_rejected": 0.0027244870770050627,
+      "camera_nis": 1.2947955788860814,
+      "camera_rejected": 0.016667707292707293
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 1.0,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 3.71786284542159,
+      "dock_nees": 2.599948447731793,
+      "lidar_nis": 1.8499172261040981,
+      "lidar_rejected": 0.002711640211640212,
+      "camera_nis": 0.8474263902762085,
+      "camera_rejected": 0.0013736263736263737
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.5,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 2.715666175093856,
+      "dock_nees": 3.172757386051181,
+      "lidar_nis": 1.283140770166426,
+      "lidar_rejected": 0.0008992805755395684,
+      "camera_nis": 2.484527155707708,
+      "camera_rejected": 0.056562947921643576
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.75,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 2.6571338647919216,
+      "dock_nees": 3.369431832905287,
+      "lidar_nis": 1.282941733765813,
+      "lidar_rejected": 0.0008992805755395684,
+      "camera_nis": 1.2653681507965087,
+      "camera_rejected": 0.013858363858363858
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 1.0,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 2.70959887175861,
+      "dock_nees": 1.9901120271059016,
+      "lidar_nis": 1.2902366913727388,
+      "lidar_rejected": 0.0008992805755395684,
+      "camera_nis": 0.7382636138432987,
+      "camera_rejected": 0.001488095238095238
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.5,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 2.1559003922104543,
+      "dock_nees": 3.82954780113326,
+      "lidar_nis": 0.9215025460524863,
+      "lidar_rejected": 0.0,
+      "camera_nis": 2.7972597924351126,
+      "camera_rejected": 0.08204701800207417
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.75,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 2.1518842832543017,
+      "dock_nees": 2.706726206159628,
+      "lidar_nis": 0.9258037524242391,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.2748287494612547,
+      "camera_rejected": 0.016668038578150936
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 1.0,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 2.1396965832490302,
+      "dock_nees": 2.7013145376201972,
+      "lidar_nis": 0.9148065475045613,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.8240484257932483,
+      "camera_rejected": 0.008241758241758242
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.5,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 1.4193068580721615,
+      "dock_nees": 3.183325096118322,
+      "lidar_nis": 0.5868124484001451,
+      "lidar_rejected": 0.0,
+      "camera_nis": 2.213323225739451,
+      "camera_rejected": 0.05163444540788877
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.75,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 1.4260571429440496,
+      "dock_nees": 2.250857228907855,
+      "lidar_nis": 0.5844439097477669,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.1886908395749687,
+      "camera_rejected": 0.013878503452055548
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 1.0,
+      "n": 8,
+      "success": 8,
+      "nav_nees": 1.4283952511914173,
+      "dock_nees": 2.7981604197561545,
+      "lidar_nis": 0.5890544739332022,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.7152243551336857,
+      "camera_rejected": 0.0027472527472527475
+    }
+  ],
+  "runs": [
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.5,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 4.658349762682994,
+      "dock_nees": 2.251860980531868,
+      "lidar_nis": 1.6688425320065798,
+      "lidar_rejected": 0.0,
+      "camera_nis": 3.226503834021743,
+      "camera_rejected": 0.07777777777777778,
+      "final_error": [
+        -0.0003023419671286392,
+        0.003887322031392415,
+        -0.005746017118859914
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.5,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 2.8051362467780407,
+      "dock_nees": 3.341178333928664,
+      "lidar_nis": 2.009906553156469,
+      "lidar_rejected": 0.007407407407407408,
+      "camera_nis": 4.30156925969236,
+      "camera_rejected": 0.0989010989010989,
+      "final_error": [
+        -0.000746410173580569,
+        -0.004820191444735278,
+        0.009262620806524957
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.5,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 3.6481623364218425,
+      "dock_nees": 4.684785865972566,
+      "lidar_nis": 1.9723957711912727,
+      "lidar_rejected": 0.0,
+      "camera_nis": 4.102676402701207,
+      "camera_rejected": 0.08791208791208792,
+      "final_error": [
+        -0.002587068055253772,
+        0.0037548774028430816,
+        -0.005794938855679277
+      ],
+      "duration": 31.5
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.5,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 4.182805549408855,
+      "dock_nees": 2.9605899920731353,
+      "lidar_nis": 1.637368958244245,
+      "lidar_rejected": 0.0,
+      "camera_nis": 3.657316522942262,
+      "camera_rejected": 0.1111111111111111,
+      "final_error": [
+        -0.0019284521145777065,
+        0.006217226721478952,
+        -0.01144336320494066
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.5,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 4.2304253560344565,
+      "dock_nees": 4.339270918160246,
+      "lidar_nis": 2.019930671302999,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.8970108307827253,
+      "camera_rejected": 0.013157894736842105,
+      "final_error": [
+        0.001671700364398232,
+        -0.0001830326149181436,
+        0.006373595002282517
+      ],
+      "duration": 33.1
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.5,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 4.057720864566145,
+      "dock_nees": 2.26598817410593,
+      "lidar_nis": 1.5896084376916437,
+      "lidar_rejected": 0.0,
+      "camera_nis": 3.290365159420282,
+      "camera_rejected": 0.10989010989010989,
+      "final_error": [
+        -0.001263676793404667,
+        0.004327498681033548,
+        -0.005978288604041815
+      ],
+      "duration": 28.1
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.5,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 3.1317246256201874,
+      "dock_nees": 2.519733205885007,
+      "lidar_nis": 1.6059816316933708,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.29559529454254,
+      "camera_rejected": 0.011494252873563218,
+      "final_error": [
+        0.002134054009057529,
+        -0.0010264513932591588,
+        -0.0010913761100619368
+      ],
+      "duration": 29.5
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.5,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 3.380705099631816,
+      "dock_nees": 2.2477040695191617,
+      "lidar_nis": 2.113343416383879,
+      "lidar_rejected": 0.014388489208633094,
+      "camera_nis": 3.151652094480538,
+      "camera_rejected": 0.0989010989010989,
+      "final_error": [
+        0.0023657240303724954,
+        0.004821393031774923,
+        -0.01098775344411651
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.75,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 4.584959183026364,
+      "dock_nees": 3.063482038338015,
+      "lidar_nis": 1.6947820254432449,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.6672952150648572,
+      "camera_rejected": 0.03333333333333333,
+      "final_error": [
+        -0.00012331531040898932,
+        0.0023422271155100205,
+        -0.00255752919414709
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.75,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 2.7120416400826692,
+      "dock_nees": 1.8497277370595093,
+      "lidar_nis": 1.9874458393760317,
+      "lidar_rejected": 0.007407407407407408,
+      "camera_nis": 1.2369650971703368,
+      "camera_rejected": 0.011111111111111112,
+      "final_error": [
+        -0.0012059775705677287,
+        -0.0025303699730029883,
+        0.0026419319105976946
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.75,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 3.531003205131278,
+      "dock_nees": 5.13461302166305,
+      "lidar_nis": 2.0572835183463174,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.549230908002996,
+      "camera_rejected": 0.011111111111111112,
+      "final_error": [
+        -0.0029336704518210244,
+        0.0009542176502791985,
+        -0.006935908954174064
+      ],
+      "duration": 31.5
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.75,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 4.286594308216067,
+      "dock_nees": 2.53129579959987,
+      "lidar_nis": 1.6424116586847624,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.7373130494855227,
+      "camera_rejected": 0.044444444444444446,
+      "final_error": [
+        -0.002415646692308871,
+        0.005045737256247684,
+        -0.008780390304541363
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.75,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 4.287493421181316,
+      "dock_nees": 2.4642632035828083,
+      "lidar_nis": 2.000706205889091,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.4493916080240735,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.001038766061932428,
+        -0.0006338232463148906,
+        0.0050068968086112164
+      ],
+      "duration": 33.1
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.75,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 3.9741258227804908,
+      "dock_nees": 5.323483537627067,
+      "lidar_nis": 1.6189922782966306,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.5155031750119374,
+      "camera_rejected": 0.02197802197802198,
+      "final_error": [
+        -0.001625071474263163,
+        0.006335457630471164,
+        -0.011591294604440527
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.75,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 3.173328676279256,
+      "dock_nees": 1.9034443726431607,
+      "lidar_nis": 1.6656049194215479,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.8402715058697606,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.0021416058388790127,
+        -0.00087725526351462,
+        -0.0017294993949521498
+      ],
+      "duration": 29.5
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 0.75,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 3.440232936302277,
+      "dock_nees": 5.758050825039658,
+      "lidar_nis": 2.134889566068128,
+      "lidar_rejected": 0.014388489208633094,
+      "camera_nis": 1.3623940724591685,
+      "camera_rejected": 0.011363636363636364,
+      "final_error": [
+        0.002812634436577532,
+        0.0024606576763791525,
+        -0.004044610332547993
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 1.0,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 4.581935528664205,
+      "dock_nees": 2.746402543881064,
+      "lidar_nis": 1.6937615856532129,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.968450999774962,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0005146683662438092,
+        0.0013915416143512882,
+        -0.0009909710544850903
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 1.0,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 2.712036883840608,
+      "dock_nees": 1.8877143119158015,
+      "lidar_nis": 2.0979467967533747,
+      "lidar_rejected": 0.007407407407407408,
+      "camera_nis": 0.9843166236130285,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0015314376624566692,
+        -0.002038152415693717,
+        0.0025787702103565735
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 1.0,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 3.627013783317961,
+      "dock_nees": 4.322397586936448,
+      "lidar_nis": 2.014947460292814,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.9559480420436867,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0027312488104145327,
+        -7.623874535445142e-05,
+        -0.004709373245372017
+      ],
+      "duration": 31.5
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 1.0,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 4.184133873785673,
+      "dock_nees": 3.0322624443281954,
+      "lidar_nis": 1.6064529054616898,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.1800908107161987,
+      "camera_rejected": 0.01098901098901099,
+      "final_error": [
+        -0.0024185977222348502,
+        0.003879246659720947,
+        -0.005591351636606845
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 1.0,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 4.3052043035580265,
+      "dock_nees": 2.68763403073403,
+      "lidar_nis": 1.983975527013634,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.3646592001081604,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.0010999519690875206,
+        -0.0009248865335418354,
+        0.0075423061099866295
+      ],
+      "duration": 33.1
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 1.0,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 3.8404311882461766,
+      "dock_nees": 1.6487432089386265,
+      "lidar_nis": 1.6135143497658238,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.9531027557047266,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0015993878771096712,
+        0.007331166997241012,
+        -0.01286094568513052
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 1.0,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 3.093974293867577,
+      "dock_nees": 1.2731037846601854,
+      "lidar_nis": 1.631075598162286,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.6069332799727957,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.0015207983739009558,
+        -0.0009600612865980904,
+        0.00010129051642726594
+      ],
+      "duration": 29.5
+    },
+    {
+      "lidar_r_scale": 1.0,
+      "camera_r_scale": 1.0,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 3.3981729080924907,
+      "dock_nees": 3.201329670459992,
+      "lidar_nis": 2.1576635857299498,
+      "lidar_rejected": 0.014285714285714285,
+      "camera_nis": 0.7659094102761091,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.003627959480001497,
+        0.0015351589060428323,
+        -0.0005515250279959361
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.5,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 3.315035992210665,
+      "dock_nees": 4.470994501728945,
+      "lidar_nis": 1.146184240146021,
+      "lidar_rejected": 0.0,
+      "camera_nis": 2.6886449024468027,
+      "camera_rejected": 0.03333333333333333,
+      "final_error": [
+        0.00014953066543243982,
+        0.0030608752068053136,
+        -0.005683713147029312
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.5,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 2.1531179660843196,
+      "dock_nees": 1.6734758500659495,
+      "lidar_nis": 1.3992971522205384,
+      "lidar_rejected": 0.0,
+      "camera_nis": 3.7634048055595963,
+      "camera_rejected": 0.0989010989010989,
+      "final_error": [
+        -0.001012930868046657,
+        -0.004618219832723536,
+        0.007561738175779986
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.5,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 2.514107545658742,
+      "dock_nees": 3.563076698035079,
+      "lidar_nis": 1.3086914105212077,
+      "lidar_rejected": 0.0,
+      "camera_nis": 2.5801601451172576,
+      "camera_rejected": 0.06593406593406594,
+      "final_error": [
+        -0.001590177505245816,
+        0.0034936141076702953,
+        -0.007554863668614242
+      ],
+      "duration": 31.5
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.5,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 2.8973140587858,
+      "dock_nees": 3.5986635035916295,
+      "lidar_nis": 1.0830940049040785,
+      "lidar_rejected": 0.0,
+      "camera_nis": 2.7716712529705427,
+      "camera_rejected": 0.07692307692307693,
+      "final_error": [
+        -0.0022074429647351845,
+        -0.0008743324109879993,
+        0.0007840082121406411
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.5,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 3.108560611118222,
+      "dock_nees": 3.574425463305504,
+      "lidar_nis": 1.4250528742297408,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.2516830934317262,
+      "camera_rejected": 0.013333333333333334,
+      "final_error": [
+        -0.0013056270914804107,
+        0.002898479184173297,
+        -0.0054937686963887344
+      ],
+      "duration": 33.2
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.5,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 3.0534756217368453,
+      "dock_nees": 3.2451365159813776,
+      "lidar_nis": 1.1439014882788237,
+      "lidar_rejected": 0.0,
+      "camera_nis": 3.5553902048454176,
+      "camera_rejected": 0.10869565217391304,
+      "final_error": [
+        -0.0017146316832352684,
+        0.002251670878955836,
+        -0.0021826205746950933
+      ],
+      "duration": 28.1
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.5,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 2.369187926148776,
+      "dock_nees": 2.6895510426167353,
+      "lidar_nis": 1.2680287999223039,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.3805526436212352,
+      "camera_rejected": 0.011904761904761904,
+      "final_error": [
+        -0.0027797019862105805,
+        -0.0030429779102887637,
+        0.006375771071228886
+      ],
+      "duration": 29.6
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.5,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 2.3145296790074803,
+      "dock_nees": 2.5667355130842306,
+      "lidar_nis": 1.4908761911086943,
+      "lidar_rejected": 0.007194244604316547,
+      "camera_nis": 1.8847101976690863,
+      "camera_rejected": 0.043478260869565216,
+      "final_error": [
+        0.002638726313130668,
+        0.0004123742409657963,
+        0.0008226604593786213
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.75,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 3.336190694521664,
+      "dock_nees": 3.223546467773236,
+      "lidar_nis": 1.1824407504109675,
+      "lidar_rejected": 0.0,
+      "camera_nis": 2.151244261134601,
+      "camera_rejected": 0.05555555555555555,
+      "final_error": [
+        7.019982154954338e-05,
+        0.0019714150698760813,
+        -0.0038949797093046357
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.75,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 2.0491959862485167,
+      "dock_nees": 1.575234164357172,
+      "lidar_nis": 1.3954013840167518,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.811840106824896,
+      "camera_rejected": 0.03333333333333333,
+      "final_error": [
+        -0.0014620355856753693,
+        -0.0027465124693054066,
+        0.0049119416726899345
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.75,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 2.4706962749924872,
+      "dock_nees": 4.8003156019595545,
+      "lidar_nis": 1.342276179653226,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.1493606808445291,
+      "camera_rejected": 0.01098901098901099,
+      "final_error": [
+        -0.0019978586373328167,
+        0.0010173659076230244,
+        -0.007384407440640395
+      ],
+      "duration": 31.5
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.75,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 2.861834004441041,
+      "dock_nees": 1.9547034964259427,
+      "lidar_nis": 1.0847496122959177,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.2593036199132888,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.002051434865907975,
+        -0.000966518439915909,
+        0.00122959763348085
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.75,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 3.056926519960583,
+      "dock_nees": 1.8602317326092401,
+      "lidar_nis": 1.4057334141511755,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.6087363463715197,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0024409365585320586,
+        0.0011997272695740688,
+        -0.0017658468539405447
+      ],
+      "duration": 33.2
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.75,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 2.878321318855344,
+      "dock_nees": 3.0359438265484893,
+      "lidar_nis": 1.1259311281826447,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.416656121126019,
+      "camera_rejected": 0.01098901098901099,
+      "final_error": [
+        -0.0022027403133919603,
+        0.004653230392119179,
+        -0.008155334973785067
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.75,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 2.3003249362203415,
+      "dock_nees": 9.408322388984725,
+      "lidar_nis": 1.2307597767460423,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.981523660856494,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.002531513731585777,
+        -0.0008355961691780264,
+        0.006921400990892668
+      ],
+      "duration": 29.5
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 0.75,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 2.3035811830953943,
+      "dock_nees": 1.0971569845839353,
+      "lidar_nis": 1.4962416246697783,
+      "lidar_rejected": 0.007194244604316547,
+      "camera_nis": 0.744280409300723,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.0024929087014073925,
+        -0.0007871294216164057,
+        0.0006848378458892412
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 1.0,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 3.3404999571853358,
+      "dock_nees": 3.688066577659787,
+      "lidar_nis": 1.1667779303501498,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.1048214472423799,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -4.135916356951e-05,
+        0.0011652454207746743,
+        -0.00019446858829264002
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 1.0,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 2.0657717506039432,
+      "dock_nees": 0.9232834070252365,
+      "lidar_nis": 1.3887982877899385,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.8866448737188136,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0015234322061314918,
+        -0.0020803333303156535,
+        0.0026025057107714744
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 1.0,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 2.559024684205168,
+      "dock_nees": 2.157318142466295,
+      "lidar_nis": 1.3751544624939982,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.6496468337685863,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0022756384537965246,
+        0.00018942732946169966,
+        -0.004356876965760481
+      ],
+      "duration": 31.5
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 1.0,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 2.8977156889829847,
+      "dock_nees": 2.8955527287431577,
+      "lidar_nis": 1.1386960419941383,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.7111944324579915,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0018820408221509322,
+        0.00018357461712392695,
+        0.006046277677013379
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 1.0,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 3.2045722469156592,
+      "dock_nees": 1.4754711297686918,
+      "lidar_nis": 1.4336326311083265,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.27237051514895333,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.002921666751396268,
+        -9.806228262687657e-05,
+        0.003289017693203
+      ],
+      "duration": 33.2
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 1.0,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 2.888186221932881,
+      "dock_nees": 2.8424148955828783,
+      "lidar_nis": 1.1395046333753025,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.147532236576252,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0017325225145867773,
+        0.00816512642642353,
+        -0.01392263887445333
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 1.0,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 2.3606964614535726,
+      "dock_nees": 0.8161290908777193,
+      "lidar_nis": 1.1970897074032958,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.46130989871195505,
+      "camera_rejected": 0.011904761904761904,
+      "final_error": [
+        0.0019479642568607238,
+        -0.0012909830931515096,
+        0.0022156979756777773
+      ],
+      "duration": 29.5
+    },
+    {
+      "lidar_r_scale": 1.25,
+      "camera_r_scale": 1.0,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 2.3603239627893355,
+      "dock_nees": 1.1226602447234462,
+      "lidar_nis": 1.482239836466761,
+      "lidar_rejected": 0.007194244604316547,
+      "camera_nis": 0.6725886731214581,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.0022284479818788228,
+        -0.0010946327762226813,
+        0.0004786176901814265
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.5,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 2.4314685433242524,
+      "dock_nees": 3.285156887150516,
+      "lidar_nis": 0.8359411819225776,
+      "lidar_rejected": 0.0,
+      "camera_nis": 3.816204736527504,
+      "camera_rejected": 0.13333333333333333,
+      "final_error": [
+        -0.000960050315807592,
+        -0.002698559763262387,
+        0.0033576567759308062
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.5,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 1.4978328119047608,
+      "dock_nees": 4.025570872631841,
+      "lidar_nis": 1.015535813614161,
+      "lidar_rejected": 0.0,
+      "camera_nis": 3.5487113509403967,
+      "camera_rejected": 0.12222222222222222,
+      "final_error": [
+        -0.00033281703034404505,
+        -0.006834095275512098,
+        0.011473205293275335
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.5,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 1.9979304374822948,
+      "dock_nees": 5.542243000815843,
+      "lidar_nis": 0.9235461802886823,
+      "lidar_rejected": 0.0,
+      "camera_nis": 2.850554809603836,
+      "camera_rejected": 0.06666666666666667,
+      "final_error": [
+        -0.0019327739841521485,
+        0.008252738144892302,
+        -0.014479334579868386
+      ],
+      "duration": 31.6
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.5,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 2.431962580853791,
+      "dock_nees": 3.06497457103606,
+      "lidar_nis": 0.8830143971940791,
+      "lidar_rejected": 0.0,
+      "camera_nis": 3.551855438276612,
+      "camera_rejected": 0.12087912087912088,
+      "final_error": [
+        -0.0011969067609114434,
+        0.00629287370421161,
+        -0.011015858734955586
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.5,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 2.4107496281608456,
+      "dock_nees": 2.051206276275357,
+      "lidar_nis": 1.000332548950974,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.8758098200283821,
+      "camera_rejected": 0.013513513513513514,
+      "final_error": [
+        -0.003026184414474775,
+        -0.0006263301800565338,
+        -0.002832318568884773
+      ],
+      "duration": 33.2
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.5,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 2.365725861275514,
+      "dock_nees": 4.529826082030606,
+      "lidar_nis": 0.8530353985875764,
+      "lidar_rejected": 0.0,
+      "camera_nis": 4.380924958568762,
+      "camera_rejected": 0.13333333333333333,
+      "final_error": [
+        -0.0025651394013335165,
+        0.003276212600853978,
+        -0.005601077652650943
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.5,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 1.8817043949637131,
+      "dock_nees": 5.751497424282734,
+      "lidar_nis": 0.8863563007741779,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.3662555427095848,
+      "camera_rejected": 0.02247191011235955,
+      "final_error": [
+        0.0027701276955121035,
+        3.155986931532884e-05,
+        -0.003642961342297024
+      ],
+      "duration": 29.5
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.5,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 2.2298288797184624,
+      "dock_nees": 2.3859072948431232,
+      "lidar_nis": 0.9742585470876619,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.9877616828258209,
+      "camera_rejected": 0.04395604395604396,
+      "final_error": [
+        -0.0002511968467111546,
+        -0.0007976168447389465,
+        0.0005070730978715687
+      ],
+      "duration": 28.700000000000003
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.75,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 2.383464730740662,
+      "dock_nees": 8.018564805816348,
+      "lidar_nis": 0.8766195835689373,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.8579950691248555,
+      "camera_rejected": 0.0449438202247191,
+      "final_error": [
+        -0.001087789959813845,
+        -0.001001053125301299,
+        0.00718424723097888
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.75,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 1.5406210093748494,
+      "dock_nees": 2.01033349597824,
+      "lidar_nis": 1.0116519495920226,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.3665155510136462,
+      "camera_rejected": 0.01098901098901099,
+      "final_error": [
+        -0.0010053123864097728,
+        -0.004577546151296741,
+        0.007156616212483868
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.75,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 2.0186643756132523,
+      "dock_nees": 1.3036300629385562,
+      "lidar_nis": 0.9315532272643855,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.585831969247027,
+      "camera_rejected": 0.022222222222222223,
+      "final_error": [
+        -0.0027784546086868653,
+        0.005584375764938698,
+        -0.008963106554496392
+      ],
+      "duration": 31.6
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.75,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 2.4442197015709852,
+      "dock_nees": 1.0885043386145064,
+      "lidar_nis": 0.8828941098350532,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.5677683433498026,
+      "camera_rejected": 0.03296703296703297,
+      "final_error": [
+        -0.0018128633959142444,
+        0.0048032537771883765,
+        -0.008963809597449579
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.75,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 2.364771118674204,
+      "dock_nees": 1.1685556769513885,
+      "lidar_nis": 1.021722022727282,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.6164871197268121,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0037815050352389967,
+        0.0010945876112117277,
+        -0.00016330271913789218
+      ],
+      "duration": 33.2
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.75,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 2.3512051745460187,
+      "dock_nees": 2.628550026272207,
+      "lidar_nis": 0.8434872465629026,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.403504756501041,
+      "camera_rejected": 0.022222222222222223,
+      "final_error": [
+        -0.002423491325699079,
+        0.002627733699323564,
+        -0.0033626024220656525
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.75,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 1.908255199237877,
+      "dock_nees": 2.2231143103463604,
+      "lidar_nis": 0.8706842846530838,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.6445157786903809,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.002812019860211734,
+        -0.0006089198805130366,
+        -0.0029891492318281365
+      ],
+      "duration": 29.5
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 0.75,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 2.203872956276564,
+      "dock_nees": 3.2125569323594183,
+      "lidar_nis": 0.9678175951902456,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.1560114080364718,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.00022638810016539768,
+        -0.0008415261325612211,
+        -0.0007929088778495519
+      ],
+      "duration": 28.700000000000003
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 1.0,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 2.3846354200844173,
+      "dock_nees": 6.059693214037858,
+      "lidar_nis": 0.8702505018713191,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.8146656787095872,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.001441244319977164,
+        -0.0007940766588258044,
+        0.0064254453772321085
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 1.0,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 1.4919231118396188,
+      "dock_nees": 4.714123936838799,
+      "lidar_nis": 1.0396852871748703,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.9145889051239824,
+      "camera_rejected": 0.01098901098901099,
+      "final_error": [
+        -0.0018054850276481012,
+        -0.0031428026434334737,
+        0.005001324918612049
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 1.0,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 2.0074380683026254,
+      "dock_nees": 1.9228575031458974,
+      "lidar_nis": 0.9266479593736932,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.4208290574884603,
+      "camera_rejected": 0.03296703296703297,
+      "final_error": [
+        -0.0037154633839868727,
+        0.003532357415555187,
+        -0.0063116978879680374
+      ],
+      "duration": 31.6
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 1.0,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 2.4179046275139933,
+      "dock_nees": 1.0838101661859303,
+      "lidar_nis": 0.8248761055937467,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.9756463584652267,
+      "camera_rejected": 0.01098901098901099,
+      "final_error": [
+        -0.002228542916263621,
+        0.004276270577974084,
+        -0.009136728842511044
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 1.0,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 2.3917374751721847,
+      "dock_nees": 0.9692887992265752,
+      "lidar_nis": 1.0406572054895797,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.36159706238651074,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.0017946429729014388,
+        0.0011248238605613416,
+        -0.0002143161902270485
+      ],
+      "duration": 33.1
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 1.0,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 2.332785291543247,
+      "dock_nees": 3.310186528213607,
+      "lidar_nis": 0.8502369420627945,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.8196749012078017,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.002611259828959822,
+        0.001197545594984306,
+        -0.008665422482345253
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 1.0,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 1.8183275165408896,
+      "dock_nees": 1.306147323999062,
+      "lidar_nis": 0.8325021718471827,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.4911775451382885,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0030685483503345434,
+        -0.001117817312854125,
+        0.0010169265183228582
+      ],
+      "duration": 29.6
+    },
+    {
+      "lidar_r_scale": 1.5,
+      "camera_r_scale": 1.0,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 2.2728211549952633,
+      "dock_nees": 2.2444088293138513,
+      "lidar_nis": 0.9335962066233034,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.7942078978261281,
+      "camera_rejected": 0.01098901098901099,
+      "final_error": [
+        -0.00018510644732372403,
+        -0.00017570042713765946,
+        -0.004414649993873532
+      ],
+      "duration": 28.700000000000003
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.5,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 1.6843878977962874,
+      "dock_nees": 2.8074755524735546,
+      "lidar_nis": 0.5242239425390824,
+      "lidar_rejected": 0.0,
+      "camera_nis": 2.4553945191404987,
+      "camera_rejected": 0.03333333333333333,
+      "final_error": [
+        -0.0009766202325616196,
+        -0.004498733419334711,
+        0.0076617472442817025
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.5,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 1.0420597737722406,
+      "dock_nees": 3.0421862583077335,
+      "lidar_nis": 0.6473743293713599,
+      "lidar_rejected": 0.0,
+      "camera_nis": 2.546186422398876,
+      "camera_rejected": 0.044444444444444446,
+      "final_error": [
+        -0.0008331016137823606,
+        -0.003746318055866227,
+        0.006354160360614536
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.5,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 1.586855116996901,
+      "dock_nees": 1.305763868889162,
+      "lidar_nis": 0.6524228760034668,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.8324434264733276,
+      "camera_rejected": 0.05555555555555555,
+      "final_error": [
+        0.0013365514158745202,
+        0.00273007980210771,
+        -0.00459524720347515
+      ],
+      "duration": 33.300000000000004
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.5,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 1.6480868089079066,
+      "dock_nees": 4.685064758979399,
+      "lidar_nis": 0.5291980348136313,
+      "lidar_rejected": 0.0,
+      "camera_nis": 3.8359156709876516,
+      "camera_rejected": 0.14285714285714285,
+      "final_error": [
+        -0.0014920802465170364,
+        0.005536085856560291,
+        -0.010424569856810617
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.5,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 1.5486872792127544,
+      "dock_nees": 3.963762721581825,
+      "lidar_nis": 0.664035681176195,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.230865163036618,
+      "camera_rejected": 0.025974025974025976,
+      "final_error": [
+        -0.0012080372178917553,
+        0.0005007718101129876,
+        0.0009030708825270573
+      ],
+      "duration": 33.1
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.5,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 1.5841329056098237,
+      "dock_nees": 4.647664901209262,
+      "lidar_nis": 0.5198332847955371,
+      "lidar_rejected": 0.0,
+      "camera_nis": 2.9268177738669783,
+      "camera_rejected": 0.07777777777777778,
+      "final_error": [
+        -0.002048794594313064,
+        0.0028179044945931815,
+        -0.0029829391756779344
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.5,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 1.1430663799777379,
+      "dock_nees": 3.1563453759611013,
+      "lidar_nis": 0.5308743877255154,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.3921619556850922,
+      "camera_rejected": 0.011627906976744186,
+      "final_error": [
+        0.000398371389451091,
+        -0.00035403340048772986,
+        -0.001912335508618579
+      ],
+      "duration": 29.5
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.5,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 1.1171787023036401,
+      "dock_nees": 1.858337331544538,
+      "lidar_nis": 0.6265370507763727,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.4868008743265673,
+      "camera_rejected": 0.021505376344086023,
+      "final_error": [
+        -0.003458746567404969,
+        -0.0011908616344416538,
+        -0.0001055879311304686
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.75,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 1.6306435285941536,
+      "dock_nees": 5.034437348593114,
+      "lidar_nis": 0.5205192608618393,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.6371079731422404,
+      "camera_rejected": 0.011235955056179775,
+      "final_error": [
+        -0.0014309501220628458,
+        -0.003999104917351226,
+        0.007630126247357261
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.75,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 1.0667431310862776,
+      "dock_nees": 2.0580893173342316,
+      "lidar_nis": 0.6368393133190132,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.3642909111185217,
+      "camera_rejected": 0.03296703296703297,
+      "final_error": [
+        -0.0010256750301227409,
+        -0.003354483075364345,
+        0.005147282158507682
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.75,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 1.5668634407693907,
+      "dock_nees": 1.0976620739342533,
+      "lidar_nis": 0.6535347014736844,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.3951709834749804,
+      "camera_rejected": 0.022222222222222223,
+      "final_error": [
+        0.0010505845820938384,
+        0.002317024910000298,
+        -0.004253860096855799
+      ],
+      "duration": 33.300000000000004
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.75,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 1.702029749722985,
+      "dock_nees": 1.8190435456580618,
+      "lidar_nis": 0.522903956893221,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.2735752337223185,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0018604212240946887,
+        0.003999261503565443,
+        -0.006964702962571234
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.75,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 1.544392549308851,
+      "dock_nees": 2.866515344056739,
+      "lidar_nis": 0.6731358896929849,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.5713618827342236,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0014194289931144244,
+        0.0006611190281956556,
+        -0.0006474071140174509
+      ],
+      "duration": 33.1
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.75,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 1.6166601876111304,
+      "dock_nees": 2.626785220146183,
+      "lidar_nis": 0.5181133716191265,
+      "lidar_rejected": 0.0,
+      "camera_nis": 1.5954551707730684,
+      "camera_rejected": 0.022222222222222223,
+      "final_error": [
+        -0.002089235328270878,
+        0.0025345919912149735,
+        -0.006854683384147631
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.75,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 1.1463878784784645,
+      "dock_nees": 1.2541772783298804,
+      "lidar_nis": 0.5216985796803147,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.7100409198772532,
+      "camera_rejected": 0.011627906976744186,
+      "final_error": [
+        0.00020796057516125912,
+        -0.0010011800518832936,
+        0.002413212589911673
+      ],
+      "duration": 29.5
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 0.75,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 1.1347366779811427,
+      "dock_nees": 1.2501477032103752,
+      "lidar_nis": 0.6288062044419507,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.962523641757143,
+      "camera_rejected": 0.010752688172043012,
+      "final_error": [
+        -0.0036181647436357434,
+        -0.0012876078682788066,
+        0.0011635711991018205
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 1.0,
+      "seed": 200,
+      "status": "success",
+      "nav_nees": 1.600884347904523,
+      "dock_nees": 5.897134548877732,
+      "lidar_nis": 0.5424379694099758,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.9177847051472797,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0010878788521051506,
+        -0.001318818158438151,
+        0.01089508258179972
+      ],
+      "duration": 29.0
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 1.0,
+      "seed": 201,
+      "status": "success",
+      "nav_nees": 1.0399438939486956,
+      "dock_nees": 4.732988206921094,
+      "lidar_nis": 0.6591955882495747,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.9149511691412752,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0014035178755118503,
+        -0.001017886660278078,
+        0.00733456482342687
+      ],
+      "duration": 27.0
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 1.0,
+      "seed": 202,
+      "status": "success",
+      "nav_nees": 1.5844223805539768,
+      "dock_nees": 0.5839217964105631,
+      "lidar_nis": 0.6459726034820328,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.8959227283897077,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.000945369882592306,
+        0.001795246268572748,
+        -0.0003780103610799834
+      ],
+      "duration": 33.300000000000004
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 1.0,
+      "seed": 203,
+      "status": "success",
+      "nav_nees": 1.7439951567992549,
+      "dock_nees": 0.8704336941224566,
+      "lidar_nis": 0.5370495820876812,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.939822652807699,
+      "camera_rejected": 0.02197802197802198,
+      "final_error": [
+        -0.0017354517959133902,
+        0.0035022205481459734,
+        -0.006814010606821519
+      ],
+      "duration": 28.0
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 1.0,
+      "seed": 204,
+      "status": "success",
+      "nav_nees": 1.5814987599073258,
+      "dock_nees": 0.8750774908619616,
+      "lidar_nis": 0.6645350191233007,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.3007640629983835,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0008250642574347823,
+        0.0006430441977830491,
+        -0.0004080502716239387
+      ],
+      "duration": 33.1
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 1.0,
+      "seed": 205,
+      "status": "success",
+      "nav_nees": 1.5681766773835444,
+      "dock_nees": 4.121336764452768,
+      "lidar_nis": 0.5154174408652921,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.7136653884339441,
+      "camera_rejected": 0.0,
+      "final_error": [
+        -0.0027491004414350595,
+        0.0010424705552679599,
+        -0.009301545377823572
+      ],
+      "duration": 27.900000000000002
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 1.0,
+      "seed": 206,
+      "status": "success",
+      "nav_nees": 1.113780535537122,
+      "dock_nees": 1.1126970476647993,
+      "lidar_nis": 0.5252125069785631,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.4131434552664048,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.00042978317001840527,
+        -0.0007752271173433467,
+        -0.0006171313895877439
+      ],
+      "duration": 29.5
+    },
+    {
+      "lidar_r_scale": 2.0,
+      "camera_r_scale": 1.0,
+      "seed": 207,
+      "status": "success",
+      "nav_nees": 1.1944602574968963,
+      "dock_nees": 4.191693808737863,
+      "lidar_nis": 0.6226150812691978,
+      "lidar_rejected": 0.0,
+      "camera_nis": 0.6257406788847913,
+      "camera_rejected": 0.0,
+      "final_error": [
+        0.0023350220607094574,
+        5.064983497660187e-05,
+        0.005986572246989841
+      ],
+      "duration": 27.900000000000002
+    }
+  ]
+}

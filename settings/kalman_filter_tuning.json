@@ -1,9 +1,13 @@
 {
-  "source": "experiments/calibration/tune_kalman_filter.py, 5 start poses x 2 seeds per setting",
-  "rule": "smallest (q_inflation, yaw_r_scale) with all runs docked, |mean NEES - 3| <= 0.25 and gate rejections <= 2%",
+  "source": "experiments/tune_kalman_filter.py, random rooms seeds 200 to 207 per setting",
+  "rule": "among the settings with every run docked and at most 2% of the LiDAR fixes and camera measurements gated out, the (lidar_r_scale, camera_r_scale) whose mean NEES of the navigation EKF and of the docking EKF are closest to 3; q_inflation kept from the odometry tuning",
   "q_inflation": 5.0,
-  "yaw_r_scale": 2.0,
-  "mean_nees": 2.9348207105894497,
-  "frac_rejected": 0.000510204081632653,
-  "median_nis": 0.13817161949582424
+  "lidar_r_scale": 1.25,
+  "camera_r_scale": 0.75,
+  "nav_nees": 2.6571338647919216,
+  "dock_nees": 3.369431832905287,
+  "lidar_nis": 1.282941733765813,
+  "camera_nis": 1.2653681507965087,
+  "lidar_rejected": 0.0008992805755395684,
+  "camera_rejected": 0.013858363858363858
 }

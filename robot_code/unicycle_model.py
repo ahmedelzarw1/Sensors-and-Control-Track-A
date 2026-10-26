@@ -1,7 +1,7 @@
 """Differential-drive (unicycle) model, tracking-error model and structural analysis.
 
 State x = [x, y, theta] (pose of the base frame B in W). Input u = [v, omega].
-The derivation is in the comments below; tests/test_movement_maths.py checks every result numerically.
+The derivation is in the comments below.
 
 Tracking error, expressed in the robot frame (Kanayama form):
     e = [e_x, e_y, e_theta],  [e_x, e_y]^T = R(theta)^T ([x_r, y_r]^T - [x, y]^T),  e_theta = wrap(theta_r - theta)
@@ -166,3 +166,20 @@ def H_marker_pose(x: np.ndarray, marker_pose: np.ndarray) -> np.ndarray:
     return np.array([[-c, -s, z2],
                      [s, -c, -z1],
                      [0.0, 0.0, -1.0]])
+
+
+def H_pose() -> np.ndarray:
+    """Jacobian of a direct pose measurement h(x) = x (the LiDAR position fix): the identity, rank 3."""
+    return np.eye(3)
+
+
+def H_wall_point(x: np.ndarray, p_B: np.ndarray, normal: np.ndarray) -> np.ndarray:
+    """Jacobian of one LiDAR wall residual r = n . (R(theta) p_B + t) - d with respect to the pose (1 x 3).
+
+    One wall gives rank 2 at most (x or y along its normal, and theta through the lever arm p_B): the position along
+    the wall is unobservable. Points on two walls that are not parallel give rank 3, so the room's corner makes the
+    whole pose observable from one scan. This is why robot_code/lidar.py wall_fix needs points on an x wall and a y wall.
+    """
+    c, s = np.cos(x[2]), np.sin(x[2])
+    dP = np.array([-s * p_B[0] - c * p_B[1], c * p_B[0] - s * p_B[1]])
+    return np.array([[normal[0], normal[1], float(normal @ dP)]])

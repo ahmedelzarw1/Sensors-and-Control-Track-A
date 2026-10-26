@@ -1,0 +1,32 @@
+{
+  "seeds": [
+    500,
+    501,
+    502,
+    503
+  ],
+  "scans": 607,
+  "fixes": 607,
+  "no_fix": 0,
+  "units": "mm, mm, deg",
+  "mean_error": [
+    -0.41,
+    -0.87,
+    0.02
+  ],
+  "std_error": [
+    9.06,
+    8.1,
+    0.33
+  ],
+  "median_predicted_std": [
+    6.95,
+    6.93,
+    0.36
+  ],
+  "ratio_true_to_predicted": [
+    1.16,
+    1.2,
+    0.87
+  ]
+}

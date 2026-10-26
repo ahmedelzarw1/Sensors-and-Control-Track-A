@@ -226,10 +226,10 @@ class MarkerSensor:
 # tilts the camera, so the errors are larger. Two corrections are applied:
 # - a floor on each standard deviation (an ASSUMPTION covering effects neither characterisation sees, such as pixel
 #   noise of a real camera), and
-# - a per-component "dynamic_inflation" factor MEASURED by experiments/camera_noise_while_driving.py, which compares measurements taken
-#   during docking runs with the measurement the true pose would give, and
-# - a further yaw scale for the correlation of the yaw errors over consecutive frames, chosen by the consistency tuning
-#   in experiments/tune_kalman_filter.py (settings/kalman_filter_tuning.json).
+# - a per-component "dynamic_inflation" factor MEASURED by experiments/camera_noise_while_driving.py, which compares
+#   measurements taken during docking runs with the measurement the true pose would give, and
+# - a common scale "camera_r_scale" chosen by the consistency tuning of the docking EKF in
+#   experiments/tune_kalman_filter.py (settings/kalman_filter_tuning.json).
 # ==============================================================================================================
 
 NOISE_JSON = Path(__file__).resolve().parents[1] / "settings" / "camera_noise.json"
@@ -250,12 +250,12 @@ class MarkerNoiseModel:
     def from_json(cls, path: Path = NOISE_JSON, static_only: bool = False, use_tuning: bool = True,
                   **kw) -> "MarkerNoiseModel":
         """static_only: the static fit only. Otherwise the measured in-motion inflation is applied and, if use_tuning,
-        also the yaw scale for correlated errors chosen by experiments/tune_kalman_filter.py (settings/kalman_filter_tuning.json)."""
+        also the scale chosen by experiments/tune_kalman_filter.py (settings/kalman_filter_tuning.json)."""
         cfg = json.loads(Path(path).read_text())
         if not static_only and "inflation" not in kw:
             infl = np.array(cfg.get("dynamic_inflation", [1.0, 1.0, 1.0]), dtype=float)
             if use_tuning and TUNING_JSON.exists():
-                infl[2] *= json.loads(TUNING_JSON.read_text())["yaw_r_scale"]
+                infl *= json.loads(TUNING_JSON.read_text()).get("camera_r_scale", 1.0)
             kw["inflation"] = infl
         return cls(cfg["coeffs"], cfg["range_bias_k_per_m"], **kw)
 

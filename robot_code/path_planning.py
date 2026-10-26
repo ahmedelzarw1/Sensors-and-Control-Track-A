@@ -25,8 +25,8 @@ from typing import Optional
 # Occupancy grid, clearance map and A* search.
 #
 # The same grid type is filled in two ways:
-# - from the known map (robot_code/room_map.py), the Stage 1 planner and the fallback, and
-# - from LiDAR scans placed with the ESTIMATED pose (Stage 2, still to be written).
+# - from LiDAR scans placed with the ESTIMATED pose (robot_code/lidar.py), which is what the robot plans on, and
+# - from the full room map (known_map_grid), used only by the random-room generator to check that a path exists.
 #
 # Obstacle inflation uses the Euclidean distance transform: every cell stores its distance to the nearest occupied cell
 # (the clearance). A cell is traversable if its clearance is at least the robot radius plus a safety margin, which is
@@ -80,7 +80,8 @@ def empty_room_grid(res: float = 0.05, pad: float = 0.0) -> Grid:
 
 
 def known_map_grid(res: float = 0.05, layout: "km.Layout | None" = None) -> Grid:
-    """Rasterise the known map: walls, obstacles (of the given layout, default the fixed room) and the station."""
+    """Rasterise the full room map: walls, obstacles and station of the given layout (default the fixed room). Used by
+    the random-room generator to check that a path exists; the robot itself plans on the LiDAR map."""
     g = empty_room_grid(res)
     X, Y = g.centres()
     for ob in km.obstacle_footprints(layout):
@@ -353,8 +354,8 @@ def reference_from_path(path: DensePath, v_profile: np.ndarray, Ts: float, exten
 #
 # plan_reference(grid, start_pose, goal_pose) runs A* to an approach point behind the goal (so the path arrives with
 # the goal heading), appends the goal, shortcuts, fillets the corners and time-samples with the speed profile.
-# The grid may come from the known map (Stage 1) or from the LiDAR occupancy map built with the estimated pose
-# (Stage 2). The planner never sees ground truth: its inputs are the estimate and a grid.
+# On the robot the grid is the LiDAR occupancy map built with the estimated pose. The planner never sees ground truth:
+# its inputs are the estimate and a grid.
 # ==============================================================================================================
 
 @dataclass(frozen=True)

@@ -36,8 +36,8 @@ from robot_code import room_map as km
 #
 # What it does not do
 # - It does not expose ground truth to the pipeline. The true pose is available only
-#   through the private method _ground_truth_pose(), which is read by experiments/
-#   and by nothing else. tests/test_robot_never_sees_truth.py enforces this.
+#   through the private method _ground_truth_pose(), which is read by experiments/true_position.py
+#   and by nothing else.
 # - It does not render the camera or place the ArUco marker. Those belong to the
 #   vision part of the team and are added in the scene file.
 #
@@ -290,9 +290,9 @@ class SimCamera:
 # MuJoCo XML for the Track A room around the patched ROBOTIS TurtleBot3 Burger (mujoco_files/robot.xml).
 #
 # room_scene_xml(layout) builds the room for any Layout (robot_code/room_map.py): walls, obstacles, charging station and
-# ArUco marker. The fixed demo room is written to mujoco_files/room.xml by commands/build_mujoco_files.py; random
-# layouts (robot_code/random_room.py) are built on the fly by load_room_sim(). The map given to the robot and the simulated
-# world come from the same Layout, so they agree by construction.
+# ArUco marker, with the station at the layout's TRUE position. Every run builds its room on the fly with
+# load_room_sim(). (mujoco_files/room.xml is the fixed demo room with the station at y = 0.40, used by the camera
+# calibration.)
 # ==============================================================================================================
 
 MODELS = Path(__file__).resolve().parents[1] / "mujoco_files"
@@ -321,18 +321,19 @@ def room_scene_xml(layout: Optional[km.Layout] = None) -> str:
     for name, x, y, sx, sy in walls:
         geoms.append(f'    <geom name="{name}" type="box" pos="{x:g} {y:g} {h / 2:g}" size="{sx:g} {sy:g} {h / 2:g}" '
                      'material="wall_mat"/>')
-    obstacles = km.OBSTACLES if layout is None else layout.obstacles
-    for ob in obstacles:
+    layout = layout if layout is not None else km.default_layout()
+    for ob in layout.obstacles:
         geoms.append(_obstacle_geom(ob))
     sx = x1 - km.STATION_DEPTH / 2
-    geoms.append(f'    <geom name="charging_station" type="box" pos="{sx:g} {km.DOCK_Y:g} {km.STATION_HEIGHT / 2:g}" '
+    dock_y = layout.dock_y   # the TRUE station position (the robot is only told layout.dock_hint_y)
+    geoms.append(f'    <geom name="charging_station" type="box" pos="{sx:g} {dock_y:g} {km.STATION_HEIGHT / 2:g}" '
                  f'size="{km.STATION_DEPTH / 2:g} {km.STATION_HALF_WIDTH:g} {km.STATION_HEIGHT / 2:g}" '
                  'material="station_mat"/>')
     plate = km.MARKER_SIZE / 2 + km.MARKER_WHITE_BORDER
     mx = km.STATION_FRONT_X - km.MARKER_PLATE_THICKNESS / 2
     # MuJoCo draws a 2d texture unmirrored on the box face whose normal is the local +z axis. Local +z is the marker
     # outward normal (world -x), local y is world +z (image up), local x is world -y (image right for a viewer).
-    geoms.append(f'    <body name="aruco_marker" pos="{mx:g} {km.DOCK_Y:g} {km.MARKER_Z:g}" xyaxes="0 -1 0 0 0 1">\n'
+    geoms.append(f'    <body name="aruco_marker" pos="{mx:g} {dock_y:g} {km.MARKER_Z:g}" xyaxes="0 -1 0 0 0 1">\n'
                  f'      <geom name="aruco_plate" type="box" size="{plate:g} {plate:g} '
                  f'{km.MARKER_PLATE_THICKNESS / 2:g}" material="aruco_mat" contype="0" conaffinity="0"/>\n'
                  '    </body>')

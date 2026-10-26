@@ -14,6 +14,7 @@ mujoco_files/.layout_*
 results/random_rooms/*
 !results/random_rooms/seed_3/
 !results/random_rooms/summary_*.csv
+results/random_rooms/seed_3/photos/
 # Calibration figures and summaries shown in the README.
 !results/camera_calibration/
 results/camera_calibration/*
@@ -25,6 +26,10 @@ results/calibration/*
 !results/calibration/odometry_calibration.png
 !results/calibration/wheel_calibration.json
 !results/calibration/kalman_filter_tuning.json
+!results/calibration/lidar_fix_accuracy.json
+# Robustness trials and trade-off studies shown in the README.
+!results/robustness/
+!results/tradeoffs/
 
 # Duplicate copies that iCloud Drive creates during sync conflicts ("name 2.py").
 * 2
